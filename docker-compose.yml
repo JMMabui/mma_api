@@ -1,0 +1,10 @@
+services:
+  services-api:
+    image: bitnami/postgresql:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRESQL_USERNAME=jmserver
+      - POSTGRESQL_PASSWORD=jdtmsm@29
+      - POSTGRESQL_DATABASE=sigamma_db
+

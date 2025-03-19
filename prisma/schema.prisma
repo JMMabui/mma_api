@@ -1,0 +1,345 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LevelCourse {
+  CURTA_DURACAO
+  TECNICO_MEDIO
+  LICENCIATURA
+  RELIGIOSO
+  MESTRADO
+}
+
+enum Period {
+  LABORAL
+  POS_LABORAL
+}
+
+enum Gender {
+  MASCULINO
+  FEMININO
+}
+
+enum MaritalStatus {
+  SOLTEIRO // Solteiro(a)
+  CASADO // Casado(a)
+  DIVORCIADO // Divorciado(a)
+  VIUVO // Viúvo(a)
+}
+
+enum ProvincyAddress {
+  MAPUTO_CIDADE
+  MAPUTO_PROVINCIA
+  GAZA
+  INHAMBANE
+  MANICA
+  SOFALA
+  TETE
+  ZAMBEZIA
+  NAMPULA
+  CABO_DELGADO
+  NIASSA
+}
+
+enum PreLevel {
+  CLASSE_10
+  CLASSE_12
+  LICENCIATURA
+}
+
+enum DocumentType {
+  BI
+  PASSAPORTE
+}
+
+enum Status {
+  PENDENTE
+  CONFIRMADO
+  CANCELADO
+  TRANCADO
+  INSCRITO
+  NAO_INSCRITO
+}
+
+enum DisciplineType {
+  COMPLEMENTAR
+  NUCLEAR
+}
+
+enum YearStudy {
+  PRIMEIRO_ANO
+  SEGUNDO_ANO
+  TERCEIRO_ANO
+  QUARTO_ANO
+}
+
+enum Semester {
+  PRIMEIRO_SEMESTRE
+  SEGUNDO_SEMESTRE
+}
+
+enum Result {
+  APROVADO
+  REPROVADO
+  EM_ANDAMENTO
+}
+
+enum StatusClasses {
+  EM_ATIVIDADE
+  DESATIVADO
+}
+
+enum TeacherType {
+  COORDENADOR
+  DOCENTE
+  AUXILIAR
+}
+
+model LoginData {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  contact   String
+  password  String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+
+  student Student? @relation // Relacionamento com Student
+
+  @@map("login_data")
+}
+
+model Student {
+  id                 String            @id @default(uuid())
+  surname            String
+  name               String
+  dataOfBirth        DateTime          @map("date_of_birth")
+  placeOfBirth       String            @map("place_of_birth")
+  gender             Gender
+  maritalStatus      MaritalStatus     @map("marital_status")
+  provincyAddress    ProvincyAddress   @map("provincy_address")
+  address            String
+  fatherName         String            @map("father_name")
+  motherName         String            @map("mother_name")
+  documentType       DocumentType      @map("document_type")
+  documentNumber     String            @map("document_number")
+  documentIssuedAt   DateTime          @map("document_issued_at")
+  documentExpiredAt  DateTime          @map("document_expired_at")
+  nuit               Int               @unique
+  educationOfficerId String?           @map("education_officer_id")
+  login_id           String?           @unique
+  loginData          LoginData?        @relation(fields: [login_id], references: [id]) // Relacionamento com LoginData
+  EducationOfficer   EducationOfficer? @relation(fields: [educationOfficerId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos:
+  Registration      Registration[] // Relacionamento com Registration
+  PreSchool         PreSchool[] // Relacionamento com PreSchool
+  StudentDiscipline StudentDiscipline[] // Relacionamento com StudentDiscipline
+  StudentsClasses   StudentsClasses[]
+  AssessmentResult  AssessmentResult[]
+
+  @@map("student")
+}
+
+model PreSchool {
+  id             String          @id @default(uuid())
+  schoolLevel    PreLevel        @map("school_level")
+  schoolName     String          @map("school_name")
+  schoolProvincy ProvincyAddress @map("school_provincy")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  student_id     String
+  student        Student         @relation(fields: [student_id], references: [id])
+
+  @@map("pre_school")
+}
+
+model EducationOfficer {
+  id              String          @id @default(uuid())
+  fullName        String
+  profession      String
+  dataOfBirth     DateTime        @map("data_of_birth")
+  email           String?         @unique
+  contact         String
+  provincyAddress ProvincyAddress @map("provincy_address")
+  address         String
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  student         Student[]
+
+  @@map("education_officer")
+}
+
+model Course {
+  id                 String         @id @default(uuid())
+  courseName         String         @map("course_name")
+  courseDescription  String?        @map("course_description")
+  courseDuration     Int            @map("course_duration")
+  levelCourse        LevelCourse    @map("level_course")
+  period             Period
+  totalVacancies     Int            @map("total_vacancies")
+  availableVacancies Int?           @map("available_vacancies")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  Registration       Registration[]
+  Discipline         Discipline[]
+  Classes            Classes[]
+
+  @@map("course")
+}
+
+model Registration {
+  id                 String    @id @default(uuid())
+  student_id         String
+  course_id          String    @map("course_id")
+  registrationStatus Status    @default(PENDENTE) @map("registration_status")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime? @map("updated_at")
+
+  student Student @relation(fields: [student_id], references: [id])
+  course  Course  @relation(fields: [course_id], references: [id])
+
+  @@map("registration")
+}
+
+model Classes {
+  id              String            @id @default(uuid())
+  className       String            @map("class_name")
+  course_id       String            @map("course_id")
+  description     String
+  status          StatusClasses     @default(DESATIVADO)
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime?         @map("updated_at")
+  course          Course            @relation(fields: [course_id], references: [id])
+  StudentsClasses StudentsClasses[]
+
+  @@map("classes")
+}
+
+model Discipline {
+  codigo            String              @id
+  disciplineName    String              @map("discipline_name")
+  year_study        YearStudy           @map("year_study")
+  semester          Semester
+  hcs               Int                 @map("hcs")
+  credits           Int
+  disciplineType    DisciplineType      @map("discipline_type")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  courseId          String?             @map("course_id")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  Course            Course?             @relation(fields: [courseId], references: [id])
+  StudentDiscipline StudentDiscipline[]
+  TeacherDiscipline TeacherDiscipline[]
+  Schedule          Schedule[]
+  Assessment        Assessment[]
+  StudyMaterial     StudyMaterial[]
+
+  @@map("disciplines")
+}
+
+model StudentDiscipline {
+  id           String    @id @default(uuid())
+  student_id   String
+  disciplineId String
+  status       Status    @default(NAO_INSCRITO)
+  result       Result    @default(REPROVADO)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @map("updated_at")
+
+  student    Student    @relation(fields: [student_id], references: [id])
+  discipline Discipline @relation(fields: [disciplineId], references: [codigo])
+
+  @@map("student_discipline")
+}
+
+model Teacher {
+  id                String              @id @default(uuid())
+  fullName          String
+  email             String              @unique
+  contact           String
+  profession        String
+  type              TeacherType
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  TeacherDiscipline TeacherDiscipline[]
+
+  @@map("teacher")
+}
+
+model TeacherDiscipline {
+  id           String    @id @default(uuid())
+  teacher_id   String
+  disciplineId String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @map("updated_at")
+
+  teacher    Teacher    @relation(fields: [teacher_id], references: [id])
+  discipline Discipline @relation(fields: [disciplineId], references: [codigo])
+
+  @@map("teacher_discipline")
+}
+
+model StudentsClasses {
+  id         String    @id @default(uuid())
+  student_id String
+  class_id   String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+
+  student Student @relation(fields: [student_id], references: [id])
+  classes Classes @relation(fields: [class_id], references: [id])
+
+  @@map("students_classes")
+}
+
+model Schedule {
+  id        String     @id @default(uuid())
+  weekDay   String // Exemplo: "Monday", "Tuesday", etc.
+  startTime DateTime // Hora de início da aula (formato timestamp)
+  endTime   DateTime // Hora de término da aula (formato timestamp)
+  subjectId String // Relacionamento com a disciplina
+  subject   Discipline @relation(fields: [subjectId], references: [codigo])
+}
+
+model Assessment {
+  id               String             @id @default(uuid())
+  name             String // Nome da avaliação (ex: Midterm, Final Exam)
+  type             String // Tipo de avaliação (ex: prova, quiz, tarefa)
+  dateApplied      DateTime // Data em que a avaliação foi aplicada
+  subjectId        String // Relacionamento com a disciplina
+  subject          Discipline         @relation(fields: [subjectId], references: [codigo])
+  AssessmentResult AssessmentResult[]
+}
+
+model AssessmentResult {
+  id           String    @id @default(uuid()) // Identificador único
+  assessmentId String // Relacionamento com a avaliação
+  studentId    String // Relacionamento com o aluno
+  grade        Float // Nota atribuída
+  createdAt    DateTime  @default(now()) // Data de criação
+  updatedAt    DateTime? @updatedAt // Data de atualização
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id])
+  student    Student    @relation(fields: [studentId], references: [id])
+
+  @@map("assessment_results")
+}
+
+model StudyMaterial {
+  id        String     @id @default(uuid())
+  name      String // Nome do material (ex: Livro, Slides)
+  type      String // Tipo de material (ex: livro, PDF, vídeo)
+  link      String? // Link para o material, se aplicável
+  subjectId String // Relacionamento com a disciplina
+  subject   Discipline @relation(fields: [subjectId], references: [codigo])
+}

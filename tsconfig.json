@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_version": "22.0.0",
+
+  "compilerOptions": {
+    "lib": ["es2023"], // Define as bibliotecas que você quer usar (ex: ES2023)
+    "module": "node16", // Configura para o formato de módulo do Node.js 16
+    "target": "es2022", // Define o alvo da compilação para ES2022
+    "strict": true, // Ativa todas as opções de verificação de tipo
+    "esModuleInterop": true, // Facilita a interoperabilidade com módulos CommonJS
+    "skipLibCheck": true, // Ignora verificações de tipos nas bibliotecas
+    "moduleResolution": "node16", // Como o TypeScript resolve módulos
+    "outDir": "./dist", // Diretório de saída para os arquivos compilados
+    "rootDir": "./src", // Diretório onde os arquivos TypeScript estão localizados
+    "sourceMap": true, // Gera mapas de fonte para depuração
+    "declaration": true, // Gera arquivos .d.ts (opcional, mas útil para pacotes)
+    "resolveJsonModule": true // Permite importar arquivos JSON como módulos
+  },
+  "include": [
+    "src/**/*.ts" // Inclui todos os arquivos TypeScript da pasta src
+  ],
+  "exclude": [
+    "node_modules" // Exclui a pasta node_modules
+  ]
+}
