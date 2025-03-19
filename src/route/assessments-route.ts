@@ -98,6 +98,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
   // GET - Listar uma avaliação específica pelo ID
   app.get(
     '/assessment/:id',
+
     {
       schema: {
         tags: ['assessment'],
