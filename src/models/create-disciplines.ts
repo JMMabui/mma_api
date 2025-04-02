@@ -70,6 +70,10 @@ export function findSubjectByCodigo(codigo: string) {
     where: {
       codigo,
     },
+    include: {
+      Course: true,
+      StudentDiscipline: true,
+    },
   })
 }
 
@@ -78,4 +82,11 @@ export async function findSubjectsByCodigos(disciplineIds: string[]) {
   return await prismaClient.discipline.findMany({
     where: { codigo: { in: disciplineIds } },
   })
+}
+
+export async function getSubjectsByCourseId(courseId: string) {
+  const subjects = await prismaClient.discipline.findMany({
+    where: { courseId },
+  })
+  return subjects
 }

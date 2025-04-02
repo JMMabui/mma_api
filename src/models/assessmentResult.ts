@@ -95,6 +95,33 @@ export async function listResultsByStudent(studentId: string) {
   }
 }
 
+export async function getAssessmentsResultByAssessmentId(assessmentId: string) {
+  try {
+    // Consultando os resultados das avaliações de um aluno
+    const results = await prismaClient.assessmentResult.findMany({
+      where: {
+        assessmentId,
+      },
+      include: {
+        student: true, // Inclui os dados do aluno associado
+      },
+    })
+
+    return {
+      success: true,
+      message: 'Resultados do aluno listados com sucesso.',
+      data: results,
+    }
+  } catch (error) {
+    console.error('Erro ao listar resultados do aluno:', error)
+    return {
+      success: false,
+      message: 'Ocorreu um erro ao listar os resultados do aluno.',
+      error: (error as unknown as Error).message,
+    }
+  }
+}
+
 export async function updateAssessmentResult({
   assessmentResultId,
   grade,

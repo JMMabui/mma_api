@@ -1,17 +1,20 @@
+import type { AssessmentType } from '@prisma/client'
 import { prismaClient } from '../database/script'
 
 interface assessmentRequest {
   name: string
-  type: string
+  type: AssessmentType
   dateApplied: Date
+  weight: number
   subjectId: string // ID da disciplina, presumo que seja uma string
 }
 
 interface updateAssessmentRequest {
   assessmentId: string
   name?: string
-  type?: string
+  type?: AssessmentType
   dateApplied?: Date
+  weight?: number
   subjectId?: string
 }
 
@@ -19,6 +22,7 @@ export async function createAssessment({
   name,
   type,
   dateApplied,
+  weight,
   subjectId,
 }: assessmentRequest) {
   try {
@@ -37,6 +41,7 @@ export async function createAssessment({
         name,
         type,
         dateApplied,
+        weight,
         subjectId,
       },
     })
@@ -77,11 +82,43 @@ export async function listAllAssessments() {
   }
 }
 
+export async function getAssessmentById(id: string) {
+  try {
+    const result = await prismaClient.assessment.findFirst({
+      where: { id },
+    })
+
+    if (!result) {
+      return {
+        success: false,
+        message: 'Nenhuma avaliação encontrada para o assunto informado.',
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Avaliaçao encontrada com sucesso.',
+      data: result,
+    }
+  } catch (error) {
+    console.error('Erro ao listar avaliações do assunto:', error)
+    return {
+      success: false,
+      message: 'Ocorreu um erro ao listar as avaliações do assunto.',
+      error: (error as unknown as Error).message,
+    }
+  }
+}
+
 export async function getAssessmentBySubjectId(subjectId: string) {
   try {
     // Buscando todas as avaliações associadas ao subjectId
     const result = await prismaClient.assessment.findMany({
       where: { subjectId },
+      include: {
+        AssessmentResult: true,
+        subject: true,
+      },
     })
 
     // Se não houver avaliações, retorne uma mensagem informando
@@ -140,6 +177,7 @@ export async function updateAssessment({
   name,
   type,
   dateApplied,
+  weight,
   subjectId,
 }: updateAssessmentRequest) {
   try {
@@ -160,6 +198,7 @@ export async function updateAssessment({
         name,
         type,
         dateApplied,
+        weight,
         subjectId,
       },
     })

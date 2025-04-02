@@ -69,6 +69,11 @@ enum Status {
   NAO_INSCRITO
 }
 
+enum StatusTeacher {
+  ATIVO
+  INATIVO
+}
+
 enum DisciplineType {
   COMPLEMENTAR
   NUCLEAR
@@ -101,6 +106,16 @@ enum TeacherType {
   COORDENADOR
   DOCENTE
   AUXILIAR
+}
+
+enum AssessmentType {
+  TESTE_INDIVIDUAL
+  TESTE_GRUPO
+  TRABALHO_INDIVIDUAL
+  TRABALHO_GRUPO
+  EXAME_NORMAL
+  EXAME_RECORRENCIA
+  EXAME_ESPECIAL
 }
 
 model LoginData {
@@ -277,11 +292,12 @@ model Teacher {
 }
 
 model TeacherDiscipline {
-  id           String    @id @default(uuid())
+  id           String        @id @default(uuid())
   teacher_id   String
   disciplineId String
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime? @map("updated_at")
+  status       StatusTeacher @default(INATIVO)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime?     @map("updated_at")
 
   teacher    Teacher    @relation(fields: [teacher_id], references: [id])
   discipline Discipline @relation(fields: [disciplineId], references: [codigo])
@@ -314,8 +330,9 @@ model Schedule {
 model Assessment {
   id               String             @id @default(uuid())
   name             String // Nome da avaliação (ex: Midterm, Final Exam)
-  type             String // Tipo de avaliação (ex: prova, quiz, tarefa)
+  type             AssessmentType // Tipo de avaliação (ex: prova, quiz, tarefa)
   dateApplied      DateTime // Data em que a avaliação foi aplicada
+  weight           Float
   subjectId        String // Relacionamento com a disciplina
   subject          Discipline         @relation(fields: [subjectId], references: [codigo])
   AssessmentResult AssessmentResult[]

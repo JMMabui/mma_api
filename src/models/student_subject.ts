@@ -21,7 +21,12 @@ export async function createStudentSubject({
 export async function listAllStudentsSubjects() {
   try {
     // Realiza a consulta no banco de dados para buscar todas as disciplinas dos estudantes
-    const result = await prismaClient.studentDiscipline.findMany()
+    const result = await prismaClient.studentDiscipline.findMany({
+      include: {
+        discipline: {},
+        student: {},
+      },
+    })
 
     // Retorna o resultado obtido da consulta
     return result
@@ -40,13 +45,30 @@ export async function getStudentSubjectsByStudentId(id: string) {
         student_id: id, // Filtra as disciplinas pelo ID do estudante
       },
       include: {
-        discipline: {
-          select: {
-            disciplineName: true,
-            semester: true,
-            year_study: true,
-          },
-        },
+        discipline: {},
+        student: {},
+      },
+    })
+
+    // Retorna as disciplinas encontradas
+    return studentSubjects
+  } catch (error) {
+    // Tratamento de erro caso a consulta falhe
+    console.error(`Error fetching subjects for student with ID ${id}:`, error)
+    throw new Error('Failed to fetch student subjects') // Lança um erro customizado
+  }
+}
+
+export async function getStudentSubjectsBySubjectId(id: string) {
+  try {
+    // Realiza a consulta no banco de dados para buscar as disciplinas do estudante com o `id` fornecido
+    const studentSubjects = await prismaClient.studentDiscipline.findMany({
+      where: {
+        disciplineId: id, // Filtra as disciplinas pelo ID do estudante
+      },
+      include: {
+        discipline: {},
+        student: {},
       },
     })
 

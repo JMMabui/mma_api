@@ -73,6 +73,7 @@ export const StudentsLogin: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
+      // console.log('api login-student inicializado')
       try {
         // Validando os dados da requisição usando Zod
         const {

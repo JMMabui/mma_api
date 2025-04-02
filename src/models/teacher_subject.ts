@@ -58,6 +58,17 @@ export async function getTeacherSubjectById(id: string) {
   return teacher_subject
 }
 
+export async function getTeacherSubjectByTeacherId(teacher_id: string) {
+  const teacher_subject = await prismaClient.teacherDiscipline.findMany({
+    where: { teacher_id },
+    include: {
+      discipline: {},
+      teacher: {},
+    },
+  })
+  return teacher_subject
+}
+
 export async function deleteTeacherSubject(id: string) {
   const teacher_subject = await prismaClient.teacherDiscipline.delete({
     where: { id },

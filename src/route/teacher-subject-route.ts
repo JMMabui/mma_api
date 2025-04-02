@@ -5,6 +5,7 @@ import { getTeacherById } from '../models/teacher'
 import {
   createTeacherSubject,
   getTeacherSubjectById,
+  getTeacherSubjectByTeacherId,
   listAllTeacherSubject,
 } from '../models/teacher_subject'
 import { findSubjectByCodigo } from '../models/create-disciplines'
@@ -106,6 +107,29 @@ export const teacher_Subject: FastifyPluginAsyncZod = async (
     async (request, reply) => {
       const { id } = request.params
       const teacher_subject = await getTeacherSubjectById(id)
+      if (!teacher_subject) {
+        return reply.status(404).send({
+          message: 'Teacher_subject not found',
+        })
+      }
+      reply.send(teacher_subject)
+    }
+  )
+
+  app.get(
+    '/teacher_subject/teacher/:teacher_id',
+    {
+      schema: {
+        tags: ['teacher_subject'],
+        description: 'Get teacher_subject by teacher_id',
+        params: z.object({
+          teacher_id: z.string(),
+        }),
+      },
+    },
+    async (request, reply) => {
+      const { teacher_id } = request.params
+      const teacher_subject = await getTeacherSubjectByTeacherId(teacher_id)
       if (!teacher_subject) {
         return reply.status(404).send({
           message: 'Teacher_subject not found',

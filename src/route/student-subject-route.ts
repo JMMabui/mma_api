@@ -4,6 +4,7 @@ import type { FastifyTypeInstance } from '../type'
 import {
   createStudentSubject,
   getStudentSubjectsByStudentId,
+  getStudentSubjectsBySubjectId,
   listAllStudentsSubjects,
 } from '../models/student_subject'
 import { findStudentById } from '../models/students'
@@ -114,6 +115,41 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
           reply
             .status(404)
             .send({ message: 'No subjects found for this student.' })
+          return
+        }
+
+        // Retorna as disciplinas encontradas
+        return studentSubject
+      } catch (error) {
+        console.error('Error fetching student subjects:', error)
+        reply.status(500).send({ message: 'Internal server error' })
+      }
+    }
+  )
+
+  app.get(
+    '/students_subjects/subject/:id', // Rota que inclui o ID do estudante
+    {
+      schema: {
+        tags: ['students_subjects'],
+        description: 'List all students for a specific subject by ID',
+        params: z.object({
+          id: z.string(),
+        }),
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params // Pegando o `id` do estudante a partir dos parâmetros da URL
+
+      try {
+        // Buscando as disciplinas do estudante com o `id` fornecido
+        const studentSubject = await getStudentSubjectsBySubjectId(id)
+
+        // Se não encontrar nada, retorna uma mensagem de erro
+        if (studentSubject.length === 0) {
+          reply
+            .status(404)
+            .send({ message: 'No students found for this subject.' })
           return
         }
 

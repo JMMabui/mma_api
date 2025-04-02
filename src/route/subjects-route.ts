@@ -5,6 +5,7 @@ import { prismaClient } from '../database/script'
 import {
   createSubjects,
   findSubjectByCodigo,
+  getSubjectsByCourseId,
 } from '../models/create-disciplines'
 export const Subjects: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -141,7 +142,12 @@ export const Subjects: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      const subjects = await prismaClient.discipline.findMany()
+      const subjects = await prismaClient.discipline.findMany({
+        include: {
+          Course: true,
+          StudentDiscipline: true,
+        },
+      })
       return subjects
     }
   )
@@ -158,9 +164,45 @@ export const Subjects: FastifyPluginAsyncZod = async (
       const { id } = request.params as { id: string }
       const subject = await findSubjectByCodigo(id.toUpperCase()) // Função fictícia para buscar a disciplina pelo código
       if (subject) {
-        return reply.send({ exists: true }) // Código já existe
+        return reply.send({ exists: true, data: subject }) // Código já existe
       }
       return reply.send({ exists: false }) // Código não existe
+    }
+  )
+
+  app.get(
+    '/subjects/course/:courseId',
+    {
+      schema: {
+        tags: ['Subjects'],
+        description: 'Search subjects by course ID',
+        params: z.object({
+          courseId: z.string(),
+        }),
+      },
+    },
+    async (request, reply) => {
+      const { courseId } = request.params
+
+      try {
+        // Tenta buscar os assuntos baseado no courseId
+        const result = await getSubjectsByCourseId(courseId)
+
+        // Se encontrar os dados, retorna uma resposta bem-sucedida
+        return reply.send({
+          success: true,
+          message: 'Subjects Found',
+          data: result,
+        })
+      } catch (error) {
+        // Se ocorrer algum erro, retorna uma resposta de erro
+        console.error('Error fetching subjects:', error) // Exibe o erro no console para debug
+        return reply.status(500).send({
+          success: false,
+          message: 'An error occurred while fetching subjects',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
     }
   )
 }

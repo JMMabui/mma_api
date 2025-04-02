@@ -4,6 +4,7 @@ import z from 'zod'
 import {
   createAssessmentResult,
   deleteAssessmentResult,
+  getAssessmentsResultByAssessmentId,
   listAllAssessmentsResult,
   listResultsByStudent,
   updateAssessmentResult,
@@ -25,7 +26,10 @@ export const AssessmentsResult: FastifyPluginAsyncZod = async (
         body: z.object({
           assessmentId: z.string(),
           studentId: z.string(),
-          grade: z.number(),
+          grade: z
+            .number()
+            .min(0, { message: 'A nota deve ser maior ou igual a 0' })
+            .max(20, { message: 'A nota deve ser menor ou igual a 20' }),
         }),
       },
     },
@@ -117,6 +121,36 @@ export const AssessmentsResult: FastifyPluginAsyncZod = async (
           success: false,
           message:
             'Ocorreu um erro ao listar os resultados da avaliação do aluno.',
+          error: (error as unknown as Error).message,
+        })
+      }
+    }
+  )
+
+  app.get(
+    '/assessment-result/assessment/:assessmentId',
+    {
+      schema: {
+        tags: ['assessment-result'],
+        summary: 'Listar resultados de avaliação de uma avaliação',
+        description:
+          'Listar resultados de avaliação de uma avaliação com base no assessmentId',
+        params: z.object({
+          assessmentId: z.string(),
+        }),
+      },
+    },
+    async (request, reply) => {
+      const { assessmentId } = request.params
+      try {
+        const assessments =
+          await getAssessmentsResultByAssessmentId(assessmentId)
+        return assessments
+      } catch (error) {
+        console.error('Error fetching assessments:', error)
+        return reply.status(500).send({
+          success: false,
+          message: 'An error occurred while fetching assessments.',
           error: (error as unknown as Error).message,
         })
       }
