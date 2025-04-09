@@ -58,10 +58,15 @@ export const Courses: FastifyPluginAsyncZod = async (
           availableVacancies,
         })
 
-        return reply.code(201).send(course)
+        return reply.code(201).send({
+          sucess: true,
+          messega: 'Course was created sucessfully',
+          data: course,
+        })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
+            sucess: false,
             message: 'Erro de validação',
             errors: error.errors,
           })
@@ -83,10 +88,11 @@ export const Courses: FastifyPluginAsyncZod = async (
     async (request, reply) => {
       try {
         const course = await listAllCourses()
-        reply.send(course)
+        reply.send({ sucess: true, message: 'Courses found', data: course })
       } catch (error) {
-        console.error('Database error while fetching students: ', error)
+        console.error('Database error while fetching courses: ', error)
         reply.code(500).send({
+          sucess: false,
           message: 'Could not retrieve courses, please try again later.',
         })
       }
@@ -123,10 +129,14 @@ export const Courses: FastifyPluginAsyncZod = async (
       const course = await findCourseById(id)
 
       if (!course) {
-        return reply.status(404).send({ message: 'Curso não encontrado' })
+        return reply
+          .status(404)
+          .send({ sucess: false, message: 'Course not found' })
       }
 
-      return reply.status(200).send(course)
+      return reply
+        .status(200)
+        .send({ sucess: false, message: 'Course Founded', data: course })
     }
   )
 
@@ -140,37 +150,37 @@ export const Courses: FastifyPluginAsyncZod = async (
         params: z.object({
           id: z.string(),
         }),
-        response: {
-          200: z.object({
-            message: z.string(),
-            course: z
-              .object({
-                levelCourse: z.string(),
-                courseName: z.string(),
-                period: z.string(),
-                Registration: z.array(
-                  z.object({
-                    student: z.object({
-                      id: z.string(),
-                      createdAt: z.date(),
-                      updatedAt: z.date(),
-                      name: z.string(),
-                      surname: z.string(),
-                      email: z.string().optional(),
-                      phone: z.string().optional(),
-                      dataOfBirth: z.date().optional(),
-                      placeOfBirth: z.string().optional(),
-                      gender: z.string().optional(),
-                      maritalStatus: z.string().optional(),
-                      login_id: z.string().nullable().optional(),
-                    }),
-                  })
-                ),
-              })
-              .nullable(),
-            countStudentRegistration: z.number(),
-          }),
-        },
+        // response: {
+        //   200: z.object({
+        //     message: z.string(),
+        //     course: z
+        //       .object({
+        //         levelCourse: z.string(),
+        //         courseName: z.string(),
+        //         period: z.string(),
+        //         Registration: z.array(
+        //           z.object({
+        //             student: z.object({
+        //               id: z.string(),
+        //               createdAt: z.date(),
+        //               updatedAt: z.date(),
+        //               name: z.string(),
+        //               surname: z.string(),
+        //               email: z.string().optional(),
+        //               phone: z.string().optional(),
+        //               dataOfBirth: z.date().optional(),
+        //               placeOfBirth: z.string().optional(),
+        //               gender: z.string().optional(),
+        //               maritalStatus: z.string().optional(),
+        //               login_id: z.string().nullable().optional(),
+        //             }),
+        //           })
+        //         ),
+        //       })
+        //       .nullable(),
+        //     countStudentRegistration: z.number(),
+        //   }),
+        // },
       },
     },
     async (request, reply) => {
@@ -182,8 +192,8 @@ export const Courses: FastifyPluginAsyncZod = async (
       // Verificando se o curso foi encontrado
       if (!course) {
         return reply.status(404).send({
-          message: 'Curso não encontrado',
-          course,
+          sucess: false,
+          message: 'Course not found',
           countStudentRegistration: 0,
         })
       }

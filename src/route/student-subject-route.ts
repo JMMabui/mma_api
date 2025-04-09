@@ -21,17 +21,17 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
         tags: ['students_subjects'],
         description: 'Create relationship between student and subjects',
         body: z.object({
-          student_id: z.string(),
-          disciplineIds: z.array(z.string()), // Alterado para um array de strings
+          studentId: z.string(),
+          subjectsIds: z.array(z.string()), // Alterado para um array de strings
         }),
       },
     },
     async (request, reply) => {
       try {
-        const { student_id, disciplineIds } = request.body
+        const { studentId, subjectsIds } = request.body
 
         // Verificar se o student_id existe
-        const studentExists = await findStudentById(student_id)
+        const studentExists = await findStudentById(studentId)
         if (!studentExists) {
           return reply.status(404).send({
             message: 'Student not found',
@@ -39,8 +39,8 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
         }
 
         // Verificar se todas as disciplinas existem
-        const disciplines = await findSubjectsByCodigos(disciplineIds) // Alteração para buscar todas as disciplinas de uma vez
-        if (disciplines.length !== disciplineIds.length) {
+        const disciplines = await findSubjectsByCodigos(subjectsIds) // Alteração para buscar todas as disciplinas de uma vez
+        if (disciplines.length !== subjectsIds.length) {
           return reply.status(404).send({
             message: 'One or more disciplines not found',
           })
@@ -48,10 +48,10 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
 
         // Criar as relações entre o estudante e as disciplinas
         await Promise.all(
-          disciplineIds.map(disciplineId =>
+          subjectsIds.map(disciplineId =>
             createStudentSubject({
-              student_id,
-              disciplineId,
+              studentId,
+              subjectId: disciplineId,
             })
           )
         )
@@ -139,25 +139,42 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
+      console.log('Entrou na rota de busca de disciplinas do estudante')
       const { id } = request.params // Pegando o `id` do estudante a partir dos parâmetros da URL
 
       try {
         // Buscando as disciplinas do estudante com o `id` fornecido
+        const student = await findStudentById(id)
+        if (!student) {
+          return reply.status(404).send({
+            sucess: false,
+            message: 'Student not found',
+          })
+        }
+        // Verifica se o estudante existe
         const studentSubject = await getStudentSubjectsBySubjectId(id)
 
         // Se não encontrar nada, retorna uma mensagem de erro
-        if (studentSubject.length === 0) {
-          reply
-            .status(404)
-            .send({ message: 'No students found for this subject.' })
-          return
-        }
+        // if (studentSubject.length === 0) {
+        //   reply.status(404).send({
+        //     sucess: false,
+        //     message: 'No subjects found for this student.',
+        //     data: [],
+        //   })
+        //   return
+        // }
 
         // Retorna as disciplinas encontradas
-        return studentSubject
+        reply.send({
+          sucess: true,
+          message: 'Students found for this subject.',
+          data: studentSubject,
+        })
       } catch (error) {
         console.error('Error fetching student subjects:', error)
-        reply.status(500).send({ message: 'Internal server error' })
+        reply
+          .status(500)
+          .send({ sucess: false, message: 'Internal server error' })
       }
     }
   )

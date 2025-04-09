@@ -137,8 +137,20 @@ export const Registrations: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      const result = await listAllRegistrations()
-      return result
+      try {
+        const result = await listAllRegistrations()
+        reply.send({
+          sucess: true,
+          message: 'Registrations found',
+          data: result,
+        })
+      } catch (error) {
+        console.error('Database error while fetching registrations: ', error)
+        reply.code(500).send({
+          sucess: false,
+          message: 'Could not retrieve courses, please try again later.',
+        })
+      }
     }
   )
 

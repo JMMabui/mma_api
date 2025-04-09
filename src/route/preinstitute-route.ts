@@ -30,33 +30,38 @@ export const PreInstitutos: FastifyPluginAsyncZod = async (
             'CABO_DELGADO',
             'NIASSA',
           ]),
-          student_id: z.string(),
+          studentId: z.string(),
         }),
       },
     },
     async (request, reply) => {
-      console.log(request.body)
+      // console.log(request.body)
       try {
-        const { schoolLevel, schoolName, schoolProvincy, student_id } =
+        const { schoolLevel, schoolName, schoolProvincy, studentId } =
           request.body
         const preinstituto = await createdPreInstituto({
           schoolLevel,
           schoolName,
           schoolProvincy,
-          student_id,
+          studentId,
         })
 
-        reply
-          .code(201)
-          .send({ message: 'pre-instituto created successfully', preinstituto })
+        reply.code(201).send({
+          sucess: true,
+          message: 'pre-instituto created successfully',
+          data: preinstituto,
+        })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
+            sucess: false,
             message: 'Erro de validação',
             errors: error.errors,
           })
         }
-        reply.code(500).send({ message: 'Internal server error' })
+        reply
+          .code(500)
+          .send({ sucess: false, message: 'Internal server error' })
       }
     }
   )

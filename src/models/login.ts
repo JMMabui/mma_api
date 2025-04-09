@@ -1,17 +1,25 @@
+import type { Job_Position } from './../../node_modules/.prisma/client/index.d'
 import { prismaClient } from '../database/script'
 
 interface LoginSchema {
   email: string
   contact: string
   password: string
+  jobPosition: Job_Position
 }
 
-export async function createLogin({ email, contact, password }: LoginSchema) {
+export async function createLogin({
+  email,
+  contact,
+  password,
+  jobPosition,
+}: LoginSchema) {
   const login = await prismaClient.loginData.create({
     data: {
       email,
       contact,
       password,
+      jobPosition,
     },
   })
 

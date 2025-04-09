@@ -142,10 +142,10 @@ export const Subjects: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      const subjects = await prismaClient.discipline.findMany({
+      const subjects = await prismaClient.subject.findMany({
         include: {
           Course: true,
-          StudentDiscipline: true,
+          StudentSubject: true,
         },
       })
       return subjects

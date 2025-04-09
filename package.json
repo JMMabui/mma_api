@@ -6,7 +6,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "dev": "tsx watch src/server.ts",
     "postinstall": "npx prisma migrate dev",
     "build": "tsc",
@@ -20,10 +20,13 @@
     "@biomejs/biome": "1.9.4",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^22.10.7",
     "fastify-type-provider-zod": "^4.0.2",
-    "prisma": "^6.2.1",
+    "jest": "^29.7.0",
+    "prisma": "^6.5.0",
+    "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
@@ -32,7 +35,7 @@
     "@fastify/jwt": "^9.0.3",
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.1",
-    "@prisma/client": "^6.2.1",
+    "@prisma/client": "^6.5.0",
     "api": "file:",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",

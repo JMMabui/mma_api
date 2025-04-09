@@ -24,7 +24,7 @@ interface studentRequest {
   documentIssuedAt: Date
   documentExpiredAt: Date
   nuit: number
-  login_id: string | null
+  loginId: string | null
 }
 
 export async function createStudents({
@@ -44,7 +44,7 @@ export async function createStudents({
   documentIssuedAt,
   documentExpiredAt,
   nuit,
-  login_id,
+  loginId,
 }: studentRequest) {
   try {
     const student = await prismaClient.student.create({
@@ -65,7 +65,7 @@ export async function createStudents({
         documentIssuedAt,
         documentExpiredAt,
         nuit,
-        login_id,
+        loginId,
       },
     })
 
@@ -86,7 +86,7 @@ export const findStudentById = async (studentId: string) => {
 
 export const findStudentByLoginId = async (loginId: string) => {
   const student = await prismaClient.student.findFirst({
-    where: { login_id: loginId },
+    where: { loginId },
   })
   return student
 }

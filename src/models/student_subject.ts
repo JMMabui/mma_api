@@ -1,18 +1,18 @@
 import { prismaClient } from '../database/script'
 
 interface student_subject_schema {
-  student_id: string
-  disciplineId: string
+  studentId: string
+  subjectId: string
 }
 
 export async function createStudentSubject({
-  student_id,
-  disciplineId,
+  studentId,
+  subjectId,
 }: student_subject_schema) {
-  const student_subject = await prismaClient.studentDiscipline.create({
+  const student_subject = await prismaClient.studentSubject.create({
     data: {
-      student_id,
-      disciplineId,
+      studentId,
+      subjectId,
     },
   })
 
@@ -21,9 +21,9 @@ export async function createStudentSubject({
 export async function listAllStudentsSubjects() {
   try {
     // Realiza a consulta no banco de dados para buscar todas as disciplinas dos estudantes
-    const result = await prismaClient.studentDiscipline.findMany({
+    const result = await prismaClient.studentSubject.findMany({
       include: {
-        discipline: {},
+        Subject: {},
         student: {},
       },
     })
@@ -40,12 +40,12 @@ export async function listAllStudentsSubjects() {
 export async function getStudentSubjectsByStudentId(id: string) {
   try {
     // Realiza a consulta no banco de dados para buscar as disciplinas do estudante com o `id` fornecido
-    const studentSubjects = await prismaClient.studentDiscipline.findMany({
+    const studentSubjects = await prismaClient.studentSubject.findMany({
       where: {
-        student_id: id, // Filtra as disciplinas pelo ID do estudante
+        studentId: id, // Filtra as disciplinas pelo ID do estudante
       },
       include: {
-        discipline: {},
+        Subject: {},
         student: {},
       },
     })
@@ -62,12 +62,12 @@ export async function getStudentSubjectsByStudentId(id: string) {
 export async function getStudentSubjectsBySubjectId(id: string) {
   try {
     // Realiza a consulta no banco de dados para buscar as disciplinas do estudante com o `id` fornecido
-    const studentSubjects = await prismaClient.studentDiscipline.findMany({
+    const studentSubjects = await prismaClient.studentSubject.findMany({
       where: {
-        disciplineId: id, // Filtra as disciplinas pelo ID do estudante
+        subjectId: id, // Filtra as disciplinas pelo ID do estudante
       },
       include: {
-        discipline: {},
+        Subject: {},
         student: {},
       },
     })

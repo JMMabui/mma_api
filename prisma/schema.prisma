@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 enum LevelCourse {
@@ -74,7 +74,7 @@ enum StatusTeacher {
   INATIVO
 }
 
-enum DisciplineType {
+enum SubjectType {
   COMPLEMENTAR
   NUCLEAR
 }
@@ -118,13 +118,30 @@ enum AssessmentType {
   EXAME_ESPECIAL
 }
 
+enum Job_Position {
+  ADMIN_IT
+  CTA_ADMIN_FINANCEIRO
+  CTA_ADMIN_REG_ACADEMICO
+  CTA_ADMIN_RH
+  CTA_ADMIN_BIBLIOTECA
+  CTA_ADMIN_COORDENADOR
+  CTA_REG_ACADEMICO
+  CTA_FINANCEIRO
+  CTA_BIBLIOTECA
+  CTA_DOCENTE
+  CTA_RH
+  CTA
+  ESTUDANTE
+}
+
 model LoginData {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  contact   String
-  password  String
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @map("updated_at")
+  id          String       @id @default(uuid())
+  email       String       @unique
+  contact     String
+  password    String
+  jobPosition Job_Position @map("job_position")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime?    @map("updated_at")
 
   student Student? @relation // Relacionamento com Student
 
@@ -149,19 +166,19 @@ model Student {
   documentExpiredAt  DateTime          @map("document_expired_at")
   nuit               Int               @unique
   educationOfficerId String?           @map("education_officer_id")
-  login_id           String?           @unique
-  loginData          LoginData?        @relation(fields: [login_id], references: [id]) // Relacionamento com LoginData
+  loginId            String?           @unique @map("login_id")
+  loginData          LoginData?        @relation(fields: [loginId], references: [id]) // Relacionamento com LoginData
   EducationOfficer   EducationOfficer? @relation(fields: [educationOfficerId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relacionamentos:
-  Registration      Registration[] // Relacionamento com Registration
-  PreSchool         PreSchool[] // Relacionamento com PreSchool
-  StudentDiscipline StudentDiscipline[] // Relacionamento com StudentDiscipline
-  StudentsClasses   StudentsClasses[]
-  AssessmentResult  AssessmentResult[]
+  Registration     Registration[] // Relacionamento com Registration
+  PreSchool        PreSchool[] // Relacionamento com PreSchool
+  StudentSubject   StudentSubject[] // Relacionamento com StudentDiscipline
+  StudentsClasses  StudentsClasses[]
+  AssessmentResult AssessmentResult[]
 
   @@map("student")
 }
@@ -171,10 +188,11 @@ model PreSchool {
   schoolLevel    PreLevel        @map("school_level")
   schoolName     String          @map("school_name")
   schoolProvincy ProvincyAddress @map("school_provincy")
+  studentId      String          @map("student_id")
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
-  student_id     String
-  student        Student         @relation(fields: [student_id], references: [id])
+
+  student Student @relation(fields: [studentId], references: [id])
 
   @@map("pre_school")
 }
@@ -207,8 +225,9 @@ model Course {
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
   Registration       Registration[]
-  Discipline         Discipline[]
-  Classes            Classes[]
+
+  Classes Classes[]
+  Subject Subject[]
 
   @@map("course")
 }
@@ -241,90 +260,90 @@ model Classes {
   @@map("classes")
 }
 
-model Discipline {
-  codigo            String              @id
-  disciplineName    String              @map("discipline_name")
-  year_study        YearStudy           @map("year_study")
-  semester          Semester
-  hcs               Int                 @map("hcs")
-  credits           Int
-  disciplineType    DisciplineType      @map("discipline_type")
-  createdAt         DateTime            @default(now()) @map("created_at")
-  courseId          String?             @map("course_id")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  Course            Course?             @relation(fields: [courseId], references: [id])
-  StudentDiscipline StudentDiscipline[]
-  TeacherDiscipline TeacherDiscipline[]
-  Schedule          Schedule[]
-  Assessment        Assessment[]
-  StudyMaterial     StudyMaterial[]
+model Subject {
+  codigo         String           @id
+  SubjectName    String           @map("Subject_name")
+  year_study     YearStudy        @map("year_study")
+  semester       Semester
+  hcs            Int              @map("hcs")
+  credits        Int
+  SubjectType    SubjectType      @map("Subject_type")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  courseId       String?          @map("course_id")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  Course         Course?          @relation(fields: [courseId], references: [id])
+  StudentSubject StudentSubject[]
+  TeacherSubject TeacherSubject[]
+  Schedule       Schedule[]
+  Assessment     Assessment[]
+  StudyMaterial  StudyMaterial[]
 
-  @@map("disciplines")
+  @@map("Subjects")
 }
 
-model StudentDiscipline {
-  id           String    @id @default(uuid())
-  student_id   String
-  disciplineId String
-  status       Status    @default(NAO_INSCRITO)
-  result       Result    @default(REPROVADO)
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime? @map("updated_at")
+model StudentSubject {
+  id        String    @id @default(uuid())
+  studentId String    @map("student_id")
+  subjectId String    @map("subject_id")
+  status    Status    @default(NAO_INSCRITO)
+  result    Result    @default(REPROVADO)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
 
-  student    Student    @relation(fields: [student_id], references: [id])
-  discipline Discipline @relation(fields: [disciplineId], references: [codigo])
+  student Student @relation(fields: [studentId], references: [id])
+  Subject Subject @relation(fields: [subjectId], references: [codigo])
 
-  @@map("student_discipline")
+  @@map("student_Subject")
 }
 
 model Teacher {
-  id                String              @id @default(uuid())
-  fullName          String
-  email             String              @unique
-  contact           String
-  profession        String
-  type              TeacherType
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  TeacherDiscipline TeacherDiscipline[]
+  id             String           @id @default(uuid())
+  fullName       String
+  email          String           @unique
+  contact        String
+  profession     String
+  type           TeacherType
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  TeacherSubject TeacherSubject[]
 
   @@map("teacher")
 }
 
-model TeacherDiscipline {
-  id           String        @id @default(uuid())
-  teacher_id   String
-  disciplineId String
-  status       StatusTeacher @default(INATIVO)
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime?     @map("updated_at")
+model TeacherSubject {
+  id        String        @id @default(uuid())
+  teacherId String        @map("teacher_id")
+  subjectId String        @map("subject_id")
+  status    StatusTeacher @default(INATIVO)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime?     @map("updated_at")
 
-  teacher    Teacher    @relation(fields: [teacher_id], references: [id])
-  discipline Discipline @relation(fields: [disciplineId], references: [codigo])
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+  Subject Subject @relation(fields: [subjectId], references: [codigo])
 
-  @@map("teacher_discipline")
+  @@map("teacher_Subject")
 }
 
 model StudentsClasses {
-  id         String    @id @default(uuid())
-  student_id String
-  class_id   String
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime? @map("updated_at")
+  id        String    @id @default(uuid())
+  studentId String    @map("student_id")
+  classId   String    @map("class_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
 
-  student Student @relation(fields: [student_id], references: [id])
-  classes Classes @relation(fields: [class_id], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+  classes Classes @relation(fields: [classId], references: [id])
 
   @@map("students_classes")
 }
 
 model Schedule {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   weekDay   String // Exemplo: "Monday", "Tuesday", etc.
   startTime DateTime // Hora de início da aula (formato timestamp)
   endTime   DateTime // Hora de término da aula (formato timestamp)
   subjectId String // Relacionamento com a disciplina
-  subject   Discipline @relation(fields: [subjectId], references: [codigo])
+  subject   Subject  @relation(fields: [subjectId], references: [codigo])
 }
 
 model Assessment {
@@ -334,7 +353,7 @@ model Assessment {
   dateApplied      DateTime // Data em que a avaliação foi aplicada
   weight           Float
   subjectId        String // Relacionamento com a disciplina
-  subject          Discipline         @relation(fields: [subjectId], references: [codigo])
+  subject          Subject            @relation(fields: [subjectId], references: [codigo])
   AssessmentResult AssessmentResult[]
 }
 
@@ -353,10 +372,23 @@ model AssessmentResult {
 }
 
 model StudyMaterial {
-  id        String     @id @default(uuid())
+  id        String  @id @default(uuid())
   name      String // Nome do material (ex: Livro, Slides)
   type      String // Tipo de material (ex: livro, PDF, vídeo)
   link      String? // Link para o material, se aplicável
   subjectId String // Relacionamento com a disciplina
-  subject   Discipline @relation(fields: [subjectId], references: [codigo])
+  subject   Subject @relation(fields: [subjectId], references: [codigo])
+}
+
+model Employeers {
+  id          String       @id @default(uuid())
+  fullName    String
+  email       String       @unique
+  contact     String
+  profession  String
+  jobPosition Job_Position @map("job_position")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime?    @map("updated_at")
+
+  @@map("employeers")
 }

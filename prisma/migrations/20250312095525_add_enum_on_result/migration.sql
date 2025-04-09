@@ -1,2 +1,0 @@
--- AlterEnum
-ALTER TYPE "Result" ADD VALUE 'EM_ANDAMENTO';

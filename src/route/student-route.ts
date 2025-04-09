@@ -1,10 +1,15 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import z from 'zod'
 import dayjs from 'dayjs'
-import { createStudents, listAllStudents } from '../models/students'
+import {
+  createStudents,
+  deleteStudent,
+  listAllStudents,
+} from '../models/students'
 import type { FastifyTypeInstance } from '../type'
 import { prismaClient } from '../database/script'
 import { createLogin } from '../models/login'
+import { SuiteContext } from 'node:test'
 
 export const Students: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -76,7 +81,7 @@ export const Students: FastifyPluginAsyncZod = async (
           nuit: z.number().refine(nuit => nuit.toString().length === 9, {
             message: 'O NUIT deve ter exatamente 9 dígitos',
           }),
-          login_id: z.string() || z.null(),
+          loginId: z.string() || z.null(),
         }),
       },
     },
@@ -105,7 +110,7 @@ export const Students: FastifyPluginAsyncZod = async (
           documentIssuedAt,
           documentExpiredAt,
           nuit,
-          login_id,
+          loginId,
         } = request.body
 
         // Cria o estudante no banco de dados
@@ -126,7 +131,7 @@ export const Students: FastifyPluginAsyncZod = async (
           documentIssuedAt,
           documentExpiredAt,
           nuit,
-          login_id,
+          loginId,
         })
 
         console.log(student)
@@ -273,6 +278,7 @@ export const Students: FastifyPluginAsyncZod = async (
           email,
           contact,
           password: passwordGenereated,
+          jobPosition: 'ESTUDANTE',
         })
 
         // Cria o estudante com loginId associado
@@ -293,7 +299,7 @@ export const Students: FastifyPluginAsyncZod = async (
           documentIssuedAt,
           documentExpiredAt,
           nuit,
-          login_id: loginData.id, // Associando o loginId do login recém-criado ao estudante
+          loginId: loginData.id, // Associando o loginId do login recém-criado ao estudante
         })
 
         // Responde com o estudante e os dados de login criados
@@ -383,7 +389,7 @@ export const Students: FastifyPluginAsyncZod = async (
         const updatedStudent = await prismaClient.student.update({
           where: { id: studentId },
           data: {
-            login_id: loginId, // Atualiza o loginId no estudante
+            loginId, // Atualiza o loginId no estudante
           },
         })
 
@@ -396,6 +402,53 @@ export const Students: FastifyPluginAsyncZod = async (
         console.error('Erro ao atualizar o loginId: ', error)
         return reply.status(500).send({
           message: 'Erro interno ao atualizar o loginId.',
+        })
+      }
+    }
+  )
+
+  app.delete(
+    '/students/:id',
+    {
+      schema: {
+        tags: ['students'],
+        description: 'Delete students',
+        params: z.object({
+          id: z.string(),
+        }),
+        response: {
+          200: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+            data: z.string(),
+          }),
+          404: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params
+        const student = await deleteStudent(id)
+        if (!student) {
+          return reply.status(404).send({
+            message: 'Student not found',
+            sucess: false,
+          })
+        }
+        reply.send({
+          message: 'Student deleted successfully',
+          sucess: true,
+          data: student.id,
+        })
+      } catch (error) {
+        console.error('Database error while deleting student: ', error)
+        reply.code(500).send({
+          message: 'Could not delete student, please try again later.',
+          sucess: false,
         })
       }
     }

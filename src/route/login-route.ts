@@ -15,10 +15,7 @@ async function findUserByEmail(email: string) {
 
 async function findStudentId(id: string) {
   const student_id = prismaClient.student.findUnique({
-    where: { login_id: id },
-    select: {
-      id: true,
-    },
+    where: { loginId: id },
   })
 
   return student_id
@@ -47,18 +44,56 @@ export const Login: FastifyPluginAsyncZod = async (
           email: z.string().email(),
           password: z.string().min(8),
           contact: z.string().min(9),
+          jobPosition: z.enum([
+            'ADMIN_IT',
+            'CTA_ADMIN_FINANCEIRO',
+            'CTA_ADMIN_REG_ACADEMICO',
+            'CTA_ADMIN_RH',
+            'CTA_ADMIN_BIBLIOTECA',
+            'CTA_ADMIN_COORDENADOR',
+            'CTA_REG_ACADEMICO',
+            'CTA_FINANCEIRO',
+            'CTA_BIBLIOTECA',
+            'CTA_DOCENTE',
+            'CTA_RH',
+            'CTA',
+            'ESTUDANTE',
+          ]),
         }),
+        response: {
+          201: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+            data: z.object({
+              id: z.string(),
+              email: z.string(),
+              contact: z.string(),
+              jobPosition: z.string(),
+              createdAt: z.string(),
+            }),
+          }),
+          400: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+            errors: z.array(z.object({ message: z.string() })).optional(),
+          }),
+          500: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+          }),
+        },
       },
     },
     async (request, reply) => {
       try {
-        const { email, password, contact } = request.body
+        const { email, password, contact, jobPosition } = request.body
 
         const existingUser = await findUserByEmail(email)
 
         if (existingUser) {
           return reply.status(400).send({
             message: 'Já existe um usuário com este email.',
+            sucess: false,
           })
         }
 
@@ -68,17 +103,28 @@ export const Login: FastifyPluginAsyncZod = async (
           email,
           contact,
           password: hashedPassword,
+          jobPosition,
         })
 
-        reply.code(201).send({ login })
+        reply.code(201).send({
+          message: 'Login criado com sucesso',
+          sucess: true,
+          data: {
+            ...login,
+            createdAt: login.createdAt.toISOString(),
+          },
+        })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             message: 'Erro de validação',
+            sucess: false,
             errors: error.errors,
           })
         }
-        reply.code(500).send({ message: 'Internal server error' })
+        reply
+          .code(500)
+          .send({ message: 'Internal server error', sucess: false })
       }
     }
   )
@@ -100,33 +146,46 @@ export const Login: FastifyPluginAsyncZod = async (
       try {
         const { email, password } = request.body
 
+        // Buscar o usuário pelo e-mail
         const user = await findUserByEmail(email)
 
         if (!user) {
           return reply.status(400).send({
-            message: 'Email inválidos.',
+            message: 'Email inválido.',
           })
         }
 
-        // Comparar a senha fornecida com a armazenada
+        // Comparar a senha fornecida com a senha armazenada
         const isPasswordValid = await bcrypt.compare(password, user.password)
 
         if (!isPasswordValid) {
           return reply.status(400).send({
-            message: 'Senha inválidos.',
+            message: 'Senha inválida.',
           })
         }
 
-        const student_id = await findStudentId(user.id)
+        // Buscar informações do estudante
+        const student = await findStudentId(user.id)
+
+        // Verificar o tipo de usuário (userType)
+        const userType = user.jobPosition // Supondo que a posição do usuário seja armazenada em `jobPosition`
 
         // Gerar o token JWT
         const token = generateToken(user.id)
 
-        reply.code(200).send({
+        // Estrutura de dados base para a resposta
+        const responseData = {
+          success: true,
           message: 'Login realizado com sucesso.',
-          token,
-          student_id,
-        })
+          data: {
+            token,
+            user,
+            ...(userType === 'ESTUDANTE' && { student }),
+          },
+        }
+
+        // Resposta com base na posição do usuário
+        reply.code(200).send(responseData)
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
@@ -134,7 +193,7 @@ export const Login: FastifyPluginAsyncZod = async (
             errors: error.errors,
           })
         }
-        reply.code(500).send({ message: 'Internal server error' })
+        reply.code(500).send({ message: 'Erro interno do servidor' })
       }
     }
   )
@@ -167,31 +226,71 @@ export const Login: FastifyPluginAsyncZod = async (
           email: z.string().email(),
           password: z.string().min(8),
           contact: z.string().min(9),
+          jobPosition: z.enum([
+            'ADMIN_IT',
+            'CTA_ADMIN_FINANCEIRO',
+            'CTA_ADMIN_REG_ACADEMICO',
+            'CTA_ADMIN_RH',
+            'CTA_ADMIN_BIBLIOTECA',
+            'CTA_ADMIN_COORDENADOR',
+            'CTA_REG_ACADEMICO',
+            'CTA_FINANCEIRO',
+            'CTA_BIBLIOTECA',
+            'CTA_DOCENTE',
+            'CTA_RH',
+            'CTA',
+            'ESTUDANTE',
+          ]),
         }),
+
+        response: {
+          200: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+            data: z.object({
+              email: z.string(),
+              contact: z.string(),
+              jobPosition: z.string(),
+            }),
+          }),
+          400: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+            errors: z.array(z.object({ message: z.string() })).optional(),
+          }),
+          500: z.object({
+            message: z.string(),
+            sucess: z.boolean(),
+          }),
+        },
       },
     },
     async (request, reply) => {
       try {
         const { id } = request.params
-        const { email, password, contact } = request.body
+        const { email, password, contact, jobPosition } = request.body
         const hashedPassword = await bcrypt.hash(password, 10)
         const login = await updateLogin(id, {
           email,
           password: hashedPassword,
           contact,
+          jobPosition,
         })
-        return reply
-          .code(200)
-          .send({ message: 'Login atualizado com sucesso', login })
+        return reply.code(200).send({
+          sucess: true,
+          message: 'Login atualizado com sucesso',
+          data: login,
+        })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
+            sucess: false,
             message: 'Erro de validação',
             errors: error.errors,
           })
         }
       }
-      reply.code(500).send({ message: 'Internal server error' })
+      reply.code(500).send({ sucess: false, message: 'Internal server error' })
     }
   )
 
