@@ -1,14 +1,14 @@
-import type { DisciplineType, Semester, YearStudy } from '@prisma/client'
+import type { Semester, YearStudy, SubjectType } from '@prisma/client'
 import { prismaClient } from '../database/script'
 
 interface createDisciplinesRequest {
   codigo: string
-  disciplineName: string
+  SubjectName: string
   year_study: YearStudy
   semester: Semester
   hcs: number
   credits: number
-  disciplineType: DisciplineType
+  SubjectType: SubjectType
 }
 
 interface createSubjectsResponse extends createDisciplinesRequest {
@@ -18,18 +18,18 @@ interface createSubjectsResponse extends createDisciplinesRequest {
 export async function createDiscipline({
   codigo,
   credits,
-  disciplineName,
-  disciplineType,
+  SubjectName,
+  SubjectType,
   hcs,
   semester,
   year_study,
 }: createDisciplinesRequest) {
-  const subject = await prismaClient.discipline.create({
+  const subject = await prismaClient.subject.create({
     data: {
       codigo,
       credits,
-      disciplineName,
-      disciplineType,
+      SubjectName,
+      SubjectType,
       hcs,
       semester,
       year_study,
@@ -42,19 +42,19 @@ export async function createDiscipline({
 export async function createSubjects({
   codigo,
   credits,
-  disciplineName,
-  disciplineType,
+  SubjectName,
+  SubjectType,
   hcs,
   semester,
   year_study,
   courseId,
 }: createSubjectsResponse) {
-  const subject = await prismaClient.discipline.create({
+  const subject = await prismaClient.subject.create({
     data: {
       codigo,
       credits,
-      disciplineName,
-      disciplineType,
+      SubjectName,
+      SubjectType,
       hcs,
       semester,
       year_study,
@@ -65,27 +65,37 @@ export async function createSubjects({
   return subject
 }
 
+export async function getAllSubjects() {
+  const subjects = await prismaClient.subject.findMany({
+    include: {
+      Course: true,
+      StudentSubject: true,
+    },
+  })
+  return subjects
+}
+
 export function findSubjectByCodigo(codigo: string) {
-  return prismaClient.discipline.findFirst({
+  return prismaClient.subject.findFirst({
     where: {
       codigo,
     },
     include: {
       Course: true,
-      StudentDiscipline: true,
+      StudentSubject: true,
     },
   })
 }
 
 export async function findSubjectsByCodigos(disciplineIds: string[]) {
   // Aqui você faz a busca das disciplinas no banco com base no array de IDs
-  return await prismaClient.discipline.findMany({
+  return await prismaClient.subject.findMany({
     where: { codigo: { in: disciplineIds } },
   })
 }
 
 export async function getSubjectsByCourseId(courseId: string) {
-  const subjects = await prismaClient.discipline.findMany({
+  const subjects = await prismaClient.subject.findMany({
     where: { courseId },
   })
   return subjects

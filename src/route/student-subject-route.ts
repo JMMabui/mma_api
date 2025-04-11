@@ -8,7 +8,7 @@ import {
   listAllStudentsSubjects,
 } from '../models/student_subject'
 import { findStudentById } from '../models/students'
-import { findSubjectsByCodigos } from '../models/create-disciplines'
+import { findSubjectsByCodigos } from '../models/subject'
 
 export const Student_Subject: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -139,7 +139,7 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      console.log('Entrou na rota de busca de disciplinas do estudante')
+      // console.log('Entrou na rota de busca de disciplinas do estudante')
       const { id } = request.params // Pegando o `id` do estudante a partir dos parâmetros da URL
 
       try {
@@ -155,14 +155,13 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
         const studentSubject = await getStudentSubjectsBySubjectId(id)
 
         // Se não encontrar nada, retorna uma mensagem de erro
-        // if (studentSubject.length === 0) {
-        //   reply.status(404).send({
-        //     sucess: false,
-        //     message: 'No subjects found for this student.',
-        //     data: [],
-        //   })
-        //   return
-        // }
+        if (studentSubject.length === 0) {
+          return reply.status(404).send({
+            sucess: false,
+            message: 'No subjects found for this student.',
+            data: [],
+          })
+        }
 
         // Retorna as disciplinas encontradas
         reply.send({

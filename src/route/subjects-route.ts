@@ -5,8 +5,9 @@ import { prismaClient } from '../database/script'
 import {
   createSubjects,
   findSubjectByCodigo,
+  getAllSubjects,
   getSubjectsByCourseId,
-} from '../models/create-disciplines'
+} from '../models/subject'
 export const Subjects: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
   opts
@@ -78,7 +79,7 @@ export const Subjects: FastifyPluginAsyncZod = async (
           'create subjects with relationsheep between subject and course ',
         body: z.object({
           codigo: z.string(),
-          disciplineName: z.string(),
+          SubjectName: z.string(),
           year_study: z.enum([
             'PRIMEIRO_ANO',
             'SEGUNDO_ANO',
@@ -88,18 +89,18 @@ export const Subjects: FastifyPluginAsyncZod = async (
           semester: z.enum(['PRIMEIRO_SEMESTRE', 'SEGUNDO_SEMESTRE']),
           hcs: z.number(),
           credits: z.number(),
-          disciplineType: z.enum(['COMPLEMENTAR', 'NUCLEAR']),
+          SubjectType: z.enum(['COMPLEMENTAR', 'NUCLEAR']),
           courseId: z.string(),
         }),
       },
     },
     async (request, reply) => {
-      console.log('api iniciado', request.body)
+      // console.log('api iniciado', request.body)
       const {
         codigo,
         credits,
-        disciplineName,
-        disciplineType,
+        SubjectName,
+        SubjectType,
         hcs,
         semester,
         year_study,
@@ -110,25 +111,28 @@ export const Subjects: FastifyPluginAsyncZod = async (
         const subject = await createSubjects({
           codigo,
           credits,
-          disciplineName,
-          disciplineType,
+          SubjectName,
+          SubjectType,
           hcs,
           semester,
           year_study,
           courseId,
         })
 
-        return reply
-          .code(201)
-          .send({ message: 'Discipline created successfully' })
+        return reply.code(201).send({
+          sucess: true,
+          message: 'Subject created successfully',
+          data: subject,
+        })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
-            message: 'Erro de validação',
+            sucess: false,
+            message: 'Validation error',
             errors: error.errors,
           })
         }
-        reply.code(500).send({ message: 'Internal server error' })
+        reply.code(500).send({ sucess: true, message: 'Internal server error' })
       }
     }
   )
@@ -142,13 +146,26 @@ export const Subjects: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      const subjects = await prismaClient.subject.findMany({
-        include: {
-          Course: true,
-          StudentSubject: true,
-        },
-      })
-      return subjects
+      try {
+        const subjects = await getAllSubjects()
+        if (!subjects) {
+          return reply
+            .status(404)
+            .send({ sucess: false, message: 'No subjects found' })
+        }
+        return reply.status(200).send({
+          sucess: true,
+          message: 'Subjects found',
+          data: subjects,
+        })
+      } catch (error) {
+        console.error('Error fetching subjects:', error)
+        return reply.status(500).send({
+          sucess: false,
+          message: 'An error occurred while fetching subjects',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
     }
   )
 

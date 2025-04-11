@@ -8,7 +8,7 @@ import {
   getTeacherSubjectByTeacherId,
   listAllTeacherSubject,
 } from '../models/teacher_subject'
-import { findSubjectByCodigo } from '../models/create-disciplines'
+import { findSubjectByCodigo } from '../models/subject'
 
 export const teacher_Subject: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
