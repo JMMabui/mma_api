@@ -7,7 +7,7 @@ import {
   findRelationshipBetweenCourseStudents,
   listAllCourses,
 } from '../models/course'
-import type { FastifyTypeInstance } from '../type'
+import type { FastifyTypeInstance } from '../types/type'
 
 export const Courses: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,

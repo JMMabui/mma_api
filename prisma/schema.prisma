@@ -10,6 +10,7 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// ===== ENUMS COMPARTILHADOS =====
 enum LevelCourse {
   CURTA_DURACAO
   TECNICO_MEDIO
@@ -29,10 +30,10 @@ enum Gender {
 }
 
 enum MaritalStatus {
-  SOLTEIRO // Solteiro(a)
-  CASADO // Casado(a)
-  DIVORCIADO // Divorciado(a)
-  VIUVO // Viúvo(a)
+  SOLTEIRO
+  CASADO
+  DIVORCIADO
+  VIUVO
 }
 
 enum ProvincyAddress {
@@ -134,6 +135,7 @@ enum Job_Position {
   ESTUDANTE
 }
 
+// ===== MODELOS DE AUTENTICAÇÃO =====
 model LoginData {
   id          String       @id @default(uuid())
   email       String       @unique
@@ -143,11 +145,25 @@ model LoginData {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime?    @map("updated_at")
 
-  student Student? @relation // Relacionamento com Student
+  student Student? @relation
 
   @@map("login_data")
 }
 
+model Employeers {
+  id          String       @id @default(uuid())
+  surname     String
+  name        String
+  email       String       @unique
+  contact     String
+  jobPosition Job_Position @map("job_position")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("employeers")
+}
+
+// ===== MODELOS DE ESTUDANTES =====
 model Student {
   id                 String            @id @default(uuid())
   surname            String
@@ -167,18 +183,18 @@ model Student {
   nuit               Int               @unique
   educationOfficerId String?           @map("education_officer_id")
   loginId            String?           @unique @map("login_id")
-  loginData          LoginData?        @relation(fields: [loginId], references: [id]) // Relacionamento com LoginData
+  loginData          LoginData?        @relation(fields: [loginId], references: [id])
   EducationOfficer   EducationOfficer? @relation(fields: [educationOfficerId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Relacionamentos:
-  Registration     Registration[] // Relacionamento com Registration
-  PreSchool        PreSchool[] // Relacionamento com PreSchool
-  StudentSubject   StudentSubject[] // Relacionamento com StudentDiscipline
+  Registration     Registration[]
+  PreSchool        PreSchool[]
+  StudentSubject   StudentSubject[]
   StudentsClasses  StudentsClasses[]
   AssessmentResult AssessmentResult[]
+  Invoice          Invoice[]
 
   @@map("student")
 }
@@ -213,182 +229,292 @@ model EducationOfficer {
   @@map("education_officer")
 }
 
+// ===== MODELOS ACADÊMICOS =====
 model Course {
-  id                 String         @id @default(uuid())
-  courseName         String         @map("course_name")
-  courseDescription  String?        @map("course_description")
-  courseDuration     Int            @map("course_duration")
-  levelCourse        LevelCourse    @map("level_course")
+  id                 String      @id @default(uuid())
+  courseName         String      @map("course_name")
+  courseDescription  String?     @map("course_description")
+  courseDuration     Int         @map("course_duration")
+  levelCourse        LevelCourse @map("level_course")
   period             Period
-  totalVacancies     Int            @map("total_vacancies")
-  availableVacancies Int?           @map("available_vacancies")
-  createdAt          DateTime       @default(now()) @map("created_at")
-  updatedAt          DateTime       @updatedAt @map("updated_at")
-  Registration       Registration[]
+  totalVacancies     Int         @map("total_vacancies")
+  availableVacancies Int?        @map("available_vacancies")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
 
-  Classes Classes[]
-  Subject Subject[]
+  Registration Registration[]
+  Classes      Classes[]
+  Subject      Subject[]
+  Invoice      Invoice[]
 
   @@map("course")
 }
 
 model Registration {
   id                 String    @id @default(uuid())
-  student_id         String
-  course_id          String    @map("course_id")
+  studentId          String    @map("student_id")
+  courseId           String    @map("course_id")
   registrationStatus Status    @default(PENDENTE) @map("registration_status")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime? @map("updated_at")
 
-  student Student @relation(fields: [student_id], references: [id])
-  course  Course  @relation(fields: [course_id], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+  course  Course  @relation(fields: [courseId], references: [id])
 
   @@map("registration")
 }
 
+model Subject {
+  id          String      @id @default(uuid())
+  subjectName String      @map("subject_name")
+  subjectType SubjectType @map("subject_type")
+  courseId    String      @map("course_id")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  course         Course           @relation(fields: [courseId], references: [id])
+  StudentSubject StudentSubject[]
+  TeacherSubject TeacherSubject[]
+  Assessment     Assessment[]
+
+  @@map("subject")
+}
+
+model StudentSubject {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  subjectId String   @map("subject_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@map("student_subject")
+}
+
 model Classes {
-  id              String            @id @default(uuid())
-  className       String            @map("class_name")
-  course_id       String            @map("course_id")
-  description     String
-  status          StatusClasses     @default(DESATIVADO)
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime?         @map("updated_at")
-  course          Course            @relation(fields: [course_id], references: [id])
+  id            String        @id @default(uuid())
+  className     String        @map("class_name")
+  courseId      String        @map("course_id")
+  yearStudy     YearStudy     @map("year_study")
+  semester      Semester
+  statusClasses StatusClasses @map("status_classes")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  course          Course            @relation(fields: [courseId], references: [id])
   StudentsClasses StudentsClasses[]
+  Schedule        Schedule[]
 
   @@map("classes")
 }
 
-model Subject {
-  codigo         String           @id
-  SubjectName    String           @map("Subject_name")
-  year_study     YearStudy        @map("year_study")
-  semester       Semester
-  hcs            Int              @map("hcs")
-  credits        Int
-  SubjectType    SubjectType      @map("Subject_type")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  courseId       String?          @map("course_id")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  Course         Course?          @relation(fields: [courseId], references: [id])
-  StudentSubject StudentSubject[]
-  TeacherSubject TeacherSubject[]
-  Schedule       Schedule[]
-  Assessment     Assessment[]
-  StudyMaterial  StudyMaterial[]
-
-  @@map("Subjects")
-}
-
-model StudentSubject {
-  id        String    @id @default(uuid())
-  studentId String    @map("student_id")
-  subjectId String    @map("subject_id")
-  status    Status    @default(NAO_INSCRITO)
-  result    Result    @default(REPROVADO)
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @map("updated_at")
-
-  student Student @relation(fields: [studentId], references: [id])
-  Subject Subject @relation(fields: [subjectId], references: [codigo])
-
-  @@map("student_Subject")
-}
-
-model Teacher {
-  id             String           @id @default(uuid())
-  fullName       String
-  email          String           @unique
-  contact        String
-  profession     String
-  type           TeacherType
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  TeacherSubject TeacherSubject[]
-
-  @@map("teacher")
-}
-
-model TeacherSubject {
-  id        String        @id @default(uuid())
-  teacherId String        @map("teacher_id")
-  subjectId String        @map("subject_id")
-  status    StatusTeacher @default(INATIVO)
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime?     @map("updated_at")
-
-  teacher Teacher @relation(fields: [teacherId], references: [id])
-  Subject Subject @relation(fields: [subjectId], references: [codigo])
-
-  @@map("teacher_Subject")
-}
-
 model StudentsClasses {
-  id        String    @id @default(uuid())
-  studentId String    @map("student_id")
-  classId   String    @map("class_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @map("updated_at")
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  classId   String   @map("class_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   student Student @relation(fields: [studentId], references: [id])
-  classes Classes @relation(fields: [classId], references: [id])
+  class   Classes @relation(fields: [classId], references: [id])
 
   @@map("students_classes")
 }
 
 model Schedule {
   id        String   @id @default(uuid())
-  weekDay   String // Exemplo: "Monday", "Tuesday", etc.
-  startTime DateTime // Hora de início da aula (formato timestamp)
-  endTime   DateTime // Hora de término da aula (formato timestamp)
-  subjectId String // Relacionamento com a disciplina
-  subject   Subject  @relation(fields: [subjectId], references: [codigo])
+  classId   String   @map("class_id")
+  dayOfWeek Int
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  class Classes @relation(fields: [classId], references: [id])
+
+  @@map("schedule")
 }
 
 model Assessment {
-  id               String             @id @default(uuid())
-  name             String // Nome da avaliação (ex: Midterm, Final Exam)
-  type             AssessmentType // Tipo de avaliação (ex: prova, quiz, tarefa)
-  dateApplied      DateTime // Data em que a avaliação foi aplicada
-  weight           Float
-  subjectId        String // Relacionamento com a disciplina
-  subject          Subject            @relation(fields: [subjectId], references: [codigo])
+  id             String         @id @default(uuid())
+  subjectId      String         @map("subject_id")
+  assessmentType AssessmentType @map("assessment_type")
+  date           DateTime
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  subject          Subject            @relation(fields: [subjectId], references: [id])
   AssessmentResult AssessmentResult[]
+
+  @@map("assessment")
 }
 
 model AssessmentResult {
-  id           String    @id @default(uuid()) // Identificador único
-  assessmentId String // Relacionamento com a avaliação
-  studentId    String // Relacionamento com o aluno
-  grade        Float // Nota atribuída
-  createdAt    DateTime  @default(now()) // Data de criação
-  updatedAt    DateTime? @updatedAt // Data de atualização
+  id           String   @id @default(uuid())
+  studentId    String   @map("student_id")
+  assessmentId String   @map("assessment_id")
+  result       Result
+  grade        Float
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  assessment Assessment @relation(fields: [assessmentId], references: [id])
   student    Student    @relation(fields: [studentId], references: [id])
+  assessment Assessment @relation(fields: [assessmentId], references: [id])
 
-  @@map("assessment_results")
+  @@map("assessment_result")
 }
 
-model StudyMaterial {
-  id        String  @id @default(uuid())
-  name      String // Nome do material (ex: Livro, Slides)
-  type      String // Tipo de material (ex: livro, PDF, vídeo)
-  link      String? // Link para o material, se aplicável
-  subjectId String // Relacionamento com a disciplina
-  subject   Subject @relation(fields: [subjectId], references: [codigo])
+// ===== MODELOS DE PROFESSORES =====
+model Teacher {
+  id            String        @id @default(uuid())
+  surname       String
+  name          String
+  email         String        @unique
+  contact       String
+  teacherType   TeacherType   @map("teacher_type")
+  statusTeacher StatusTeacher @map("status_teacher")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  TeacherSubject TeacherSubject[]
+
+  @@map("teacher")
 }
 
-model Employeers {
-  id          String       @id @default(uuid())
-  fullName    String
-  email       String       @unique
-  contact     String
-  profession  String
-  jobPosition Job_Position @map("job_position")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime?    @map("updated_at")
+model TeacherSubject {
+  id        String   @id @default(uuid())
+  teacherId String   @map("teacher_id")
+  subjectId String   @map("subject_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("employeers")
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@map("teacher_subject")
+}
+
+// ===== MODELOS DE MENSALIDADES =====
+enum InvoiceStatus {
+  PENDENTE
+  PAGO
+  ATRASADO
+  CANCELADO
+  PARCIALMENTE_PAGO
+}
+
+enum InvoiceType {
+  MENSALIDADE
+  MATRICULA
+  PROPINA
+  MATERIAL
+  OUTROS
+}
+
+enum PaymentMethod {
+  DINHEIRO
+  TRANSFERENCIA
+  DEPOSITO
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  OUTROS
+}
+
+enum Month {
+  JANEIRO
+  FEVEREIRO
+  MARCO
+  ABRIL
+  MAIO
+  JUNHO
+  JULHO
+  AGOSTO
+  SETEMBRO
+  OUTUBRO
+  NOVEMBRO
+  DEZEMBRO
+}
+
+model Invoice {
+  id                 String        @id @default(uuid())
+  studentId          String        @map("student_id")
+  courseId           String        @map("course_id")
+  type               InvoiceType   @default(MENSALIDADE)
+  amount             Float
+  dueDate            DateTime      @map("due_date")
+  status             InvoiceStatus @default(PENDENTE)
+  month              Month?        @map("month")
+  year               Int?          @map("year")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  cancelledAt        DateTime?     @map("cancelled_at")
+  cancelledBy        String?       @map("cancelled_by")
+  cancellationReason String?       @map("cancellation_reason")
+
+  student         Student           @relation(fields: [studentId], references: [id])
+  course          Course            @relation(fields: [courseId], references: [id])
+  payments        Payment[]
+  history         InvoiceHistory[]
+  LateFee         LateFee[]
+  PaymentReminder PaymentReminder[]
+
+  @@map("invoice")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  invoiceId     String        @map("invoice_id")
+  amount        Float
+  paymentMethod PaymentMethod @map("payment_method")
+  paymentDate   DateTime      @map("payment_date")
+  reference     String? // Número de referência do pagamento
+  description   String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("payment")
+}
+
+model InvoiceHistory {
+  id          String        @id @default(uuid())
+  invoiceId   String        @map("invoice_id")
+  status      InvoiceStatus
+  description String
+  createdAt   DateTime      @default(now()) @map("created_at")
+  createdBy   String        @map("created_by")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("invoice_history")
+}
+
+model LateFee {
+  id        String   @id @default(uuid())
+  invoiceId String   @map("invoice_id")
+  amount    Float
+  daysLate  Int      @map("days_late")
+  appliedAt DateTime @map("applied_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("late_fee")
+}
+
+model PaymentReminder {
+  id           String   @id @default(uuid())
+  invoiceId    String   @map("invoice_id")
+  sentAt       DateTime @map("sent_at")
+  reminderType String   @map("reminder_type") // EMAIL, SMS, WHATSAPP
+  status       String // ENVIADO, FALHOU
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("payment_reminder")
 }

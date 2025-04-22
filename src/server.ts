@@ -20,13 +20,19 @@ import { teachersData } from './route/teacher-route'
 import { Students } from './route/student-route'
 import { Assessments } from './route/assessments-route'
 import { AssessmentsResult } from './route/assessmentsResult-route'
+import { InvoiceRoutes } from './route/invoice-route'
+import { PaymentRoutes } from './route/payment-route'
+import { PaymentReminderRoutes } from './route/payment-reminder-route'
+import { LateFeeRoutes } from './route/late-fee-route'
+import { InvoiceHistoryRoutes } from './route/invoice-history-route'
+import { corsOptions } from './config/cors'
 
 const app = fastify().withTypeProvider<ZodTypeProvider>()
 
 app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
 
-app.register(fastifyCors, { origin: '*' })
+app.register(fastifyCors, corsOptions)
 
 app.register(fastifySwagger, {
   openapi: {
@@ -56,6 +62,12 @@ app.register(teacher_Subject)
 
 app.register(Assessments)
 app.register(AssessmentsResult)
+
+app.register(InvoiceRoutes)
+app.register(PaymentRoutes)
+app.register(PaymentReminderRoutes)
+app.register(LateFeeRoutes)
+app.register(InvoiceHistoryRoutes)
 
 app
   .listen({

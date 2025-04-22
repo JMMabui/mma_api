@@ -1,89 +1,77 @@
 import { prismaClient } from '../database/script'
 
-interface scheduleRequest {
-  weekDay: string
+interface CreateScheduleRequest {
+  classId: string
+  dayOfWeek: number
   startTime: Date
   endTime: Date
-  subjectId: string
 }
 
-export async function createSchedule({
-  weekDay,
-  startTime,
-  endTime,
-  subjectId,
-}: scheduleRequest) {
-  try {
-    // Validações simples para garantir que os dados sejam válidos
-    if (!weekDay || !startTime || !endTime || !subjectId) {
-      return {
-        success: false,
-        message:
-          'Todos os campos são obrigatórios: weekDay, startTime, endTime, subjectId.',
-      }
-    }
+interface UpdateScheduleRequest {
+  dayOfWeek?: number
+  startTime?: Date
+  endTime?: Date
+}
 
-    // Garantir que o startTime seja antes do endTime
-    if (startTime >= endTime) {
-      return {
-        success: false,
-        message: 'O horário de início deve ser antes do horário de término.',
-      }
-    }
-
-    // Criando o agendamento no banco de dados
-    const schedule = await prismaClient.schedule.create({
+export const ScheduleModel = {
+  async create(data: CreateScheduleRequest) {
+    return await prismaClient.schedule.create({
       data: {
-        weekDay,
-        startTime,
-        endTime,
-        subjectId,
+        class_id: data.classId,
+        dayOfWeek: data.dayOfWeek,
+        start_time: data.startTime,
+        end_time: data.endTime,
       },
     })
+  },
 
-    // Retorno bem-sucedido
-    return {
-      success: true,
-      message: 'Horário criado com sucesso.',
-      data: schedule,
-    }
-  } catch (error) {
-    // Tratamento de erro
-    console.error('Erro ao criar o horário:', error)
-    return {
-      success: false,
-      message: 'Ocorreu um erro ao criar o horário.',
-      error: (error as unknown as Error).message,
-    }
-  }
-}
+  async findById(id: string) {
+    return await prismaClient.schedule.findUnique({
+      where: { id },
+      include: {
+        classes: true,
+      },
+    })
+  },
 
-export async function listAllSchedule() {
-  try {
-    // Buscando todos os registros de schedule
-    const schedules = await prismaClient.schedule.findMany()
+  async findByClassId(classId: string) {
+    return await prismaClient.schedule.findMany({
+      where: { class_id: classId },
+      include: {
+        classes: true,
+      },
+    })
+  },
 
-    // Verificando se não existem registros
-    if (schedules.length === 0) {
-      return {
-        success: false,
-        message: 'Nenhum horário encontrado.',
-        data: [],
-      }
-    }
+  async update(id: string, data: UpdateScheduleRequest) {
+    return await prismaClient.schedule.update({
+      where: { id },
+      data: {
+        dayOfWeek: data.dayOfWeek,
+        start_time: data.startTime,
+        end_time: data.endTime,
+      },
+    })
+  },
 
-    return {
-      success: true,
-      message: 'Horários encontrados com sucesso.',
-      data: schedules,
-    }
-  } catch (error) {
-    // Tratando erros inesperados
-    console.error('Erro ao listar horários:', error)
-    return {
-      success: false,
-      message: 'Ocorreu um erro ao buscar os horários.',
-      error: (error as unknown as Error).message,
-    }
-  }
+  async delete(id: string) {
+    return await prismaClient.schedule.delete({
+      where: { id },
+    })
+  },
+
+  async deleteByClassId(classId: string) {
+    return await prismaClient.schedule.deleteMany({
+      where: { class_id: classId },
+    })
+  },
+
+  async getClassSchedule(classId: string) {
+    return await prismaClient.schedule.findMany({
+      where: { class_id: classId },
+      orderBy: {
+        dayOfWeek: 'asc',
+      },
+    })
+  },
 }

@@ -1,6 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import type { FastifyTypeInstance } from '../type'
+import type { FastifyTypeInstance } from '../types/type'
 import { prismaClient } from '../database/script'
 import {
   createSubjects,

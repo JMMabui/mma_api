@@ -1,86 +1,81 @@
 import { prismaClient } from '../database/script'
 
-interface Schema {
-  teacher_id: string
-  disciplineId: string
+interface CreateTeacherSubjectRequest {
+  teacherId: string
+  subjectId: string
 }
 
-export async function createTeacherSubject({
-  teacher_id,
-  disciplineId,
-}: Schema) {
-  const teacher_subject = await prismaClient.teacherDiscipline.create({
-    data: {
-      teacher_id,
-      disciplineId,
-    },
-  })
-
-  return teacher_subject
-}
-
-export async function listAllTeacherSubject() {
-  const teacher_subjects = await prismaClient.teacherDiscipline.findMany({
-    select: {
-      id: true,
-      teacher_id: true,
-      disciplineId: true,
-      discipline: {
-        select: {
-          codigo: true,
-          disciplineName: true,
-          year_study: true,
-          semester: true,
-          hcs: true,
-          credits: true,
-          disciplineType: true,
-        },
+export const TeacherSubjectModel = {
+  async create(data: CreateTeacherSubjectRequest) {
+    return await prismaClient.teacherSubject.create({
+      data: {
+        teacherId: data.teacherId,
+        subjectId: data.subjectId,
       },
-      teacher: {
-        select: {
-          fullName: true,
-          email: true,
-          contact: true,
-          profession: true,
-          type: true,
-        },
+    })
+  },
+
+  async findById(id: string) {
+    return await prismaClient.teacherSubject.findUnique({
+      where: { id },
+      include: {
+        teacher: true,
+        Subject: true,
       },
-    },
-  })
+    })
+  },
 
-  return teacher_subjects
-}
+  async findByTeacherId(teacherId: string) {
+    return await prismaClient.teacherSubject.findMany({
+      where: { teacherId },
+      include: {
+        Subject: true,
+      },
+    })
+  },
 
-export async function getTeacherSubjectById(id: string) {
-  const teacher_subject = await prismaClient.teacherDiscipline.findUnique({
-    where: { id },
-  })
-  return teacher_subject
-}
+  async findBySubjectId(subjectId: string) {
+    return await prismaClient.teacherSubject.findMany({
+      where: { subjectId },
+      include: {
+        teacher: true,
+      },
+    })
+  },
 
-export async function getTeacherSubjectByTeacherId(teacher_id: string) {
-  const teacher_subject = await prismaClient.teacherDiscipline.findMany({
-    where: { teacher_id },
-    include: {
-      discipline: {},
-      teacher: {},
-    },
-  })
-  return teacher_subject
-}
+  async delete(id: string) {
+    return await prismaClient.teacherSubject.delete({
+      where: { id },
+    })
+  },
 
-export async function deleteTeacherSubject(id: string) {
-  const teacher_subject = await prismaClient.teacherDiscipline.delete({
-    where: { id },
-  })
-  return teacher_subject
-}
+  async deleteByTeacherId(teacherId: string) {
+    return await prismaClient.teacherSubject.deleteMany({
+      where: { teacherId },
+    })
+  },
 
-// Update teacher's data
-export async function updateTeacherSubject(id: string, data: Partial<Schema>) {
-  const teacher_subject = await prismaClient.teacherDiscipline.update({
-    where: { id },
-    data: { ...data },
-  })
-  return teacher_subject
+  async deleteBySubjectId(subjectId: string) {
+    return await prismaClient.teacherSubject.deleteMany({
+      where: { subjectId },
+    })
+  },
+
+  async getTeacherSubjects(teacherId: string) {
+    return await prismaClient.teacherSubject.findMany({
+      where: { teacherId },
+      include: {
+        Subject: true,
+      },
+    })
+  },
+
+  async getSubjectTeachers(subjectId: string) {
+    return await prismaClient.teacherSubject.findMany({
+      where: { subjectId },
+      include: {
+        teacher: true,
+      },
+    })
+  },
 }

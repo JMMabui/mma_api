@@ -1,5 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { FastifyTypeInstance } from '../type'
+import type { FastifyTypeInstance } from '../types/type'
 import { createStudent } from '../models/loginStudentsController'
 import z from 'zod'
 import dayjs from 'dayjs'

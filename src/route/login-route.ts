@@ -3,7 +3,7 @@ import { z } from 'zod'
 import bcrypt from 'bcrypt'
 import { prismaClient } from '../database/script'
 import jwt from 'jsonwebtoken'
-import type { FastifyTypeInstance } from '../type'
+import type { FastifyTypeInstance } from '../types/type'
 import { createLogin, deleteLogin, updateLogin } from '../models/login'
 
 // Função para encontrar o usuário por email
@@ -39,6 +39,7 @@ export const Login: FastifyPluginAsyncZod = async (
     {
       schema: {
         tags: ['login'],
+        summary: 'create credential to login',
         description: 'create credential to login',
         body: z.object({
           email: z.string().email(),

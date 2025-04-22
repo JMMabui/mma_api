@@ -6,7 +6,7 @@ import {
   deleteStudent,
   listAllStudents,
 } from '../models/students'
-import type { FastifyTypeInstance } from '../type'
+import type { FastifyTypeInstance } from '../types/type'
 import { prismaClient } from '../database/script'
 import { createLogin } from '../models/login'
 import { SuiteContext } from 'node:test'
