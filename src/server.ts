@@ -1,5 +1,5 @@
 import { fastify } from 'fastify'
-import { fastifyCors } from '@fastify/cors'
+import cors from '@fastify/cors'
 import {
   jsonSchemaTransform,
   serializerCompiler,
@@ -10,7 +10,7 @@ import { fastifySwagger } from '@fastify/swagger'
 import { fastifySwaggerUi } from '@fastify/swagger-ui'
 import { StudentsLogin } from './route/login-students-route'
 import { Student_Subject } from './route/student-subject-route'
-import { teacher_Subject } from './route/teacher-subject-route'
+import { TeacherSubject } from './route/teacher-subject-route'
 import { Login } from './route/login-route'
 import { PreInstitutos } from './route/preinstitute-route'
 import { Courses } from './route/course-route'
@@ -32,7 +32,8 @@ const app = fastify().withTypeProvider<ZodTypeProvider>()
 app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
 
-app.register(fastifyCors, corsOptions)
+// Register CORS with options
+app.register(cors, corsOptions)
 
 app.register(fastifySwagger, {
   openapi: {
@@ -58,7 +59,7 @@ app.register(Subjects)
 
 app.register(Student_Subject)
 app.register(teachersData)
-app.register(teacher_Subject)
+app.register(TeacherSubject)
 
 app.register(Assessments)
 app.register(AssessmentsResult)

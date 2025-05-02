@@ -3,7 +3,7 @@ import { prismaClient } from '../database/script'
 
 interface assessmentRequest {
   name: string
-  type: AssessmentType
+  assessmentType: AssessmentType
   dateApplied: Date
   weight: number
   subjectId: string // ID da disciplina, presumo que seja uma string
@@ -12,7 +12,7 @@ interface assessmentRequest {
 interface updateAssessmentRequest {
   assessmentId: string
   name?: string
-  type?: AssessmentType
+  assessmentType?: AssessmentType
   dateApplied?: Date
   weight?: number
   subjectId?: string
@@ -20,18 +20,18 @@ interface updateAssessmentRequest {
 
 export async function createAssessment({
   name,
-  type,
+  assessmentType,
   dateApplied,
   weight,
   subjectId,
 }: assessmentRequest) {
   try {
     // Validações para garantir que os campos sejam preenchidos corretamente
-    if (!name || !type || !dateApplied || !subjectId) {
+    if (!name || !assessmentType || !dateApplied || !subjectId) {
       return {
         success: false,
         message:
-          'Todos os campos são obrigatórios: name, type, dateApplied, subjectId.',
+          'Todos os campos são obrigatórios: name, assessmentType, dateApplied, subjectId.',
       }
     }
 
@@ -39,7 +39,7 @@ export async function createAssessment({
     const assessment = await prismaClient.assessment.create({
       data: {
         name,
-        type,
+        assessmentType,
         dateApplied,
         weight,
         subjectId,
@@ -116,7 +116,7 @@ export async function getAssessmentBySubjectId(subjectId: string) {
     const result = await prismaClient.assessment.findMany({
       where: { subjectId },
       include: {
-        AssessmentResult: true,
+        assessmentResult: true,
         subject: true,
       },
     })
@@ -175,7 +175,7 @@ export async function listAssessmentsByStudent(studentId: string) {
 export async function updateAssessment({
   assessmentId,
   name,
-  type,
+  assessmentType,
   dateApplied,
   weight,
   subjectId,
@@ -196,7 +196,7 @@ export async function updateAssessment({
       },
       data: {
         name,
-        type,
+        assessmentType,
         dateApplied,
         weight,
         subjectId,

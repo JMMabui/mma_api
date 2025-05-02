@@ -12,8 +12,8 @@ interface CreateInvoiceRequest {
   type: InvoiceType
   amount: number
   dueDate: Date
-  month?: Month
-  year?: number
+  month: Month
+  year: number
 }
 
 interface UpdateInvoiceRequest {
@@ -78,6 +78,65 @@ export const InvoiceModel = {
       },
     })
   },
+  async findByCourseIdAndStudentId(courseId: string, studentId: string) {
+    return await prismaClient.invoice.findMany({
+      where: { courseId, studentId },
+      include: {
+        student: true,
+        payments: true,
+        history: true,
+        LateFee: true,
+        PaymentReminder: true,
+      },
+    })
+  },
+
+  async findByCourseIdAndStudentIdAndStatus(
+    courseId: string,
+    studentId: string,
+    status: InvoiceStatus
+  ) {
+    return await prismaClient.invoice.findMany({
+      where: { courseId, studentId, status },
+      include: {
+        student: true,
+        payments: true,
+        history: true,
+        LateFee: true,
+        PaymentReminder: true,
+      },
+    })
+  },
+  async findByStudentIdCourseIdMonthYear(
+    studentId: string,
+    courseId: string,
+    month: Month,
+    year: number
+  ) {
+    return await prismaClient.invoice.findFirst({
+      where: {
+        studentId,
+        courseId,
+        month,
+        year,
+      },
+    })
+  },
+  // async findInvoice(
+  //   studentId: string,
+  //   courseId: string,
+  //   month: Month,
+  //   year: string
+  // ) {
+  //   return await prismaClient.invoice.findFirst({
+  //     where: {
+  //       studentId,
+  //       courseId,
+  //       month,
+  //       year,
+  //     },
+  //   })
+  // },
 
   async findByCourseId(courseId: string) {
     return await prismaClient.invoice.findMany({
@@ -104,6 +163,10 @@ export const InvoiceModel = {
         cancellationReason: data.cancellationReason,
       },
     })
+  },
+
+  async deleteAll() {
+    return await prismaClient.invoice.deleteMany()
   },
 
   async delete(id: string) {

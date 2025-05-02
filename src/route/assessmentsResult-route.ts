@@ -10,6 +10,8 @@ import {
   updateAssessmentResult,
 } from '../models/assessmentResult'
 import { listAssessmentsByStudent } from '../models/assessment'
+import { getRegistrationByStudentId } from '../models/registration'
+import { getStudentSubjectsByStudentId } from '../models/student_subject'
 
 export const AssessmentsResult: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -111,10 +113,22 @@ export const AssessmentsResult: FastifyPluginAsyncZod = async (
       const { studentId } = request.params
 
       try {
+        // // Verifica se o studentId é válido
+        // if (!studentId) {
+        //   return reply.status(400).send({
+        //     success: false,
+        //     message: 'Student id invalid.',
+        //   })
+        // }
+
         // Obter todos os resultados de avaliação para o studentId fornecido
         const results = await listResultsByStudent(studentId)
 
-        return reply.status(200).send(results)
+        return reply.status(200).send({
+          success: true,
+          message: 'Resultados de avaliação do aluno listados com sucesso.',
+          data: results,
+        })
       } catch (error) {
         console.error('Erro ao listar resultados de avaliação do aluno:', error)
         return reply.status(500).send({

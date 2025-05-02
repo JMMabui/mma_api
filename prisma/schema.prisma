@@ -145,7 +145,8 @@ model LoginData {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime?    @map("updated_at")
 
-  student Student? @relation
+  student Student?  @relation
+  Teacher Teacher[]
 
   @@map("login_data")
 }
@@ -265,32 +266,37 @@ model Registration {
 }
 
 model Subject {
-  id          String      @id @default(uuid())
-  subjectName String      @map("subject_name")
-  subjectType SubjectType @map("subject_type")
-  courseId    String      @map("course_id")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-
-  course         Course           @relation(fields: [courseId], references: [id])
+  codigo         String           @id
+  subjectName    String           @map("subject_name")
+  year_study     YearStudy        @map("year_study")
+  semester       Semester
+  hcs            Int              @map("hcs")
+  credits        Int
+  subjectType    SubjectType      @map("subject_type")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  courseId       String?          @map("course_id")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  Course         Course?          @relation(fields: [courseId], references: [id])
   StudentSubject StudentSubject[]
   TeacherSubject TeacherSubject[]
   Assessment     Assessment[]
 
-  @@map("subject")
+  @@map("subjects")
 }
 
 model StudentSubject {
-  id        String   @id @default(uuid())
-  studentId String   @map("student_id")
-  subjectId String   @map("subject_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id        String    @id @default(uuid())
+  studentId String    @map("student_id")
+  subjectId String    @map("subject_id")
+  status    Status    @default(NAO_INSCRITO)
+  result    Result    @default(REPROVADO)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
 
   student Student @relation(fields: [studentId], references: [id])
-  subject Subject @relation(fields: [subjectId], references: [id])
+  Subject Subject @relation(fields: [subjectId], references: [codigo])
 
-  @@map("student_subject")
+  @@map("student_Subject")
 }
 
 model Classes {
@@ -338,24 +344,20 @@ model Schedule {
 }
 
 model Assessment {
-  id             String         @id @default(uuid())
-  subjectId      String         @map("subject_id")
-  assessmentType AssessmentType @map("assessment_type")
-  date           DateTime
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-
-  subject          Subject            @relation(fields: [subjectId], references: [id])
-  AssessmentResult AssessmentResult[]
-
-  @@map("assessment")
+  id               String             @id @default(uuid())
+  name             String
+  assessmentType   AssessmentType
+  dateApplied      DateTime
+  weight           Float
+  subjectId        String
+  subject          Subject            @relation(fields: [subjectId], references: [codigo])
+  assessmentResult AssessmentResult[]
 }
 
 model AssessmentResult {
   id           String   @id @default(uuid())
   studentId    String   @map("student_id")
   assessmentId String   @map("assessment_id")
-  result       Result
   grade        Float
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -373,27 +375,30 @@ model Teacher {
   name          String
   email         String        @unique
   contact       String
-  teacherType   TeacherType   @map("teacher_type")
-  statusTeacher StatusTeacher @map("status_teacher")
+  teacherType   TeacherType   @default(DOCENTE) @map("teacher_type")
+  statusTeacher StatusTeacher @default(INATIVO) @map("status_teacher")
+  loginId       String?       @map("login_id")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   TeacherSubject TeacherSubject[]
+  login          LoginData?       @relation(fields: [loginId], references: [id])
 
   @@map("teacher")
 }
 
 model TeacherSubject {
-  id        String   @id @default(uuid())
-  teacherId String   @map("teacher_id")
-  subjectId String   @map("subject_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id        String        @id @default(uuid())
+  teacherId String        @map("teacher_id")
+  subjectId String        @map("subject_id")
+  status    StatusTeacher @default(INATIVO)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime?     @map("updated_at")
 
   teacher Teacher @relation(fields: [teacherId], references: [id])
-  subject Subject @relation(fields: [subjectId], references: [id])
+  Subject Subject @relation(fields: [subjectId], references: [codigo])
 
-  @@map("teacher_subject")
+  @@map("teacher_Subject")
 }
 
 // ===== MODELOS DE MENSALIDADES =====

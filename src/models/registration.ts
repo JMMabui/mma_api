@@ -2,8 +2,8 @@ import type { Status } from '@prisma/client'
 import { prismaClient } from '../database/script'
 
 interface createRegistrationRequest {
-  course_id: string
-  student_id: string
+  courseId: string
+  studentId: string
 }
 
 interface createRegistrationRequestWithStatus
@@ -12,27 +12,27 @@ interface createRegistrationRequestWithStatus
 }
 
 export const createRegistration = async ({
-  course_id,
-  student_id,
+  courseId,
+  studentId,
 }: createRegistrationRequest) => {
   const registration = await prismaClient.registration.create({
     data: {
-      course_id,
-      student_id,
+      courseId,
+      studentId,
     },
   })
   return registration
 }
 
 export const createRegistrationWithConfirmationStatus = async ({
-  course_id,
-  student_id,
+  courseId,
+  studentId,
   registrationStatus,
 }: createRegistrationRequestWithStatus) => {
   const registration = await prismaClient.registration.create({
     data: {
-      course_id,
-      student_id,
+      courseId,
+      studentId,
       registrationStatus,
     },
   })
@@ -58,19 +58,23 @@ export async function getRegistrationById(id: string) {
   return data
 }
 
-export async function getRegistrationByCourseId(course_id: string) {
+export async function getRegistrationByCourseId(courseId: string) {
   const data = await prismaClient.registration.findMany({
     where: {
-      course_id,
+      courseId,
+    },
+    include: {
+      course: true,
+      student: true,
     },
   })
   return data
 }
 
-export async function getRegistrationByStudentId(student_id: string) {
+export async function getRegistrationByStudentId(studentId: string) {
   const data = await prismaClient.registration.findMany({
     where: {
-      student_id,
+      studentId,
     },
   })
   return data
@@ -78,16 +82,16 @@ export async function getRegistrationByStudentId(student_id: string) {
 
 export async function updateRegistration(
   id: string,
-  course_id: string,
-  student_id: string
+  courseId: string,
+  studentId: string
 ) {
   const data = await prismaClient.registration.update({
     where: {
       id,
     },
     data: {
-      course_id,
-      student_id,
+      courseId,
+      studentId,
     },
   })
   return data

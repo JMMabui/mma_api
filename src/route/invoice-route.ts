@@ -2,6 +2,8 @@ import { InvoiceModel } from '../models/invoice'
 import { z, ZodError } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { FastifyTypeInstance } from '../types/type'
+import { getRegistrationByCourseId } from '../models/registration'
+import type { Month } from '@prisma/client'
 
 export const InvoiceRoutes: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance
@@ -24,10 +26,9 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
             'MATERIAL',
             'OUTROS',
           ]),
-          amount: z.number().positive(),
           dueDate: z.string().datetime(),
-          month: z
-            .enum([
+          months: z.array(
+            z.enum([
               'JANEIRO',
               'FEVEREIRO',
               'MARCO',
@@ -41,23 +42,98 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
               'NOVEMBRO',
               'DEZEMBRO',
             ])
-            .optional(),
+          ),
           year: z.number().min(2000).max(2100).optional(),
         }),
       },
     },
     async (request, reply) => {
-      const { studentId, courseId, type, amount, dueDate, month, year } =
-        request.body
+      console.log('Creating invoice...')
+      console.log('Request body:', request.body)
+
+      // Desestruturação correta com 'months'
+      const { studentId, courseId, type, dueDate, months } = request.body
+
+      // Pega o primeiro mês do array 'months'
+      const selectedMonth = months[0]
+
+      console.log('Selected month:', selectedMonth) // Verificando o valor de selectedMonth
+
+      // get actual year
+      const currentYear = new Date().getFullYear()
+      const currentMonth = new Date().getMonth() + 1
+
+      // O restante do código continua igual
+      const registration = await getRegistrationByCourseId(courseId)
+      const getCourse = registration.map(
+        getRegistration => getRegistration.course
+      )
+      const getStudent = registration.map(
+        getRegistration => getRegistration.student
+      )
+
+      const period = getCourse[0].period
+      const levelCourse = getCourse[0].levelCourse
+
+      let amount: number | undefined
+      if (type === 'MENSALIDADE') {
+        if (levelCourse === 'LICENCIATURA') {
+          if (period === 'LABORAL') {
+            amount = 4500.0
+          } else {
+            amount = 5200.0
+          }
+        } else if (levelCourse === 'MESTRADO') {
+          if (period === 'LABORAL') {
+            amount = 5500.0
+          } else {
+            amount = 6200.0
+          }
+        } else if (levelCourse === 'TECNICO_MEDIO') {
+          if (period === 'LABORAL') {
+            amount = 3500.0
+          } else {
+            amount = 4200.0
+          }
+        } else if (levelCourse === 'CURTA_DURACAO') {
+          if (period === 'LABORAL') {
+            amount = 2500.0
+          } else {
+            amount = 3200.0
+          }
+        } else if (levelCourse === 'RELIGIOSO') {
+          if (period === 'LABORAL') {
+            amount = 1500.0
+          } else {
+            amount = 2200.0
+          }
+        }
+      }
+
+      const existingInvoice =
+        await InvoiceModel.findByStudentIdCourseIdMonthYear(
+          studentId,
+          courseId,
+          selectedMonth,
+          currentYear
+        )
+
+      if (existingInvoice) {
+        return reply.code(409).send({
+          success: false,
+          message: 'Invoice already exists for the selected month and year',
+        })
+      }
+
       try {
         const invoice = await InvoiceModel.create({
           studentId,
           courseId,
           type,
-          amount,
+          amount: amount ?? 0,
           dueDate: new Date(dueDate),
-          month,
-          year,
+          month: selectedMonth,
+          year: currentYear,
         })
 
         return reply.code(201).send({
@@ -431,6 +507,32 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
         return reply.code(500).send({
           success: false,
           message: 'Error deleting invoice',
+        })
+      }
+    }
+  )
+
+  app.delete(
+    '/invoice',
+    {
+      schema: {
+        tags: ['invoice'],
+        summary: 'Delete all invoices',
+        description: 'Delete all invoices',
+      },
+    },
+    async (request, reply) => {
+      try {
+        await InvoiceModel.deleteAll()
+        return reply.code(200).send({
+          success: true,
+          message: 'All invoices deleted successfully',
+        })
+      } catch (error) {
+        console.error('Error deleting all invoices:', error)
+        return reply.code(500).send({
+          success: false,
+          message: 'Error deleting all invoices',
         })
       }
     }

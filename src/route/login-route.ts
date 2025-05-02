@@ -214,6 +214,38 @@ export const Login: FastifyPluginAsyncZod = async (
     }
   )
 
+  app.get(
+    '/login/:email',
+    {
+      schema: {
+        tags: ['login'],
+        description: 'List all login data by email',
+        params: z.object({ email: z.string() }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { email } = request.params
+        const login = await findUserByEmail(email)
+
+        if (!login) {
+          return reply.code(404).send({ message: 'User not found' })
+        }
+
+        return reply
+          .code(200)
+          .send({
+            sucess: true,
+            message: 'Login retrieved sucessfully',
+            data: login,
+          })
+      } catch (error) {
+        console.error(error)
+        return reply.code(500).send({ message: 'Internal server error' })
+      }
+    }
+  )
+
   app.put(
     '/login/:id',
     {

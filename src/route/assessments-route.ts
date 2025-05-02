@@ -24,7 +24,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
         description: 'Create assessments',
         body: z.object({
           name: z.string(),
-          type: z.enum([
+          assessmentType: z.enum([
             'TESTE_INDIVIDUAL',
             'TESTE_GRUPO',
             'TRABALHO_INDIVIDUAL',
@@ -52,7 +52,8 @@ export const Assessments: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      const { name, type, dateApplied, weight, subjectId } = request.body
+      const { name, assessmentType, dateApplied, weight, subjectId } =
+        request.body
 
       try {
         // Buscar todas as avaliações com o mesmo subjectId
@@ -61,7 +62,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
         // Verificar se existe alguma avaliação do tipo EXAME_NORMAL, EXAME_RECORRENCIA ou EXAME_ESPECIAL
         const existingExams = assessments?.data?.some(assessment =>
           ['EXAME_NORMAL', 'EXAME_RECORRENCIA', 'EXAME_ESPECIAL'].includes(
-            assessment.type
+            assessment.assessmentType
           )
         )
 
@@ -76,7 +77,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
         // Calcular a soma do peso das avaliações existentes, ignorando tipos que começam com "EXAME"
         const totalWeight = Array.isArray(assessments.data)
           ? assessments.data.reduce((sum, assessment) => {
-              if (!assessment.type.startsWith('EXAME')) {
+              if (!assessment.assessmentType.startsWith('EXAME')) {
                 return sum + assessment.weight
               }
               return sum
@@ -85,7 +86,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
 
         // Verificar se a soma dos pesos ultrapassa 100
         // Ignorar o peso da nova avaliação se o tipo começar com 'EXAME'
-        if (weight && !type.startsWith('EXAME')) {
+        if (weight && !assessmentType.startsWith('EXAME')) {
           // Verificar se a soma dos pesos ultrapassa 100
           if (totalWeight + weight > 100) {
             return reply.code(400).send({
@@ -102,7 +103,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
         // Criando a avaliação no banco de dados usando Prisma
         const assessment = await createAssessment({
           name,
-          type,
+          assessmentType,
           dateApplied,
           weight,
           subjectId,
@@ -264,7 +265,7 @@ export const Assessments: FastifyPluginAsyncZod = async (
         }),
         body: z.object({
           name: z.string(),
-          type: z.enum([
+          assessmentType: z.enum([
             'TESTE_INDIVIDUAL',
             'TESTE_GRUPO',
             'TRABALHO_INDIVIDUAL',
@@ -290,12 +291,13 @@ export const Assessments: FastifyPluginAsyncZod = async (
     },
     async (request, reply) => {
       const { id } = request.params
-      const { name, type, dateApplied, weight, subjectId } = request.body
+      const { name, assessmentType, dateApplied, weight, subjectId } =
+        request.body
       try {
         const assessment = await updateAssessment({
           assessmentId: id,
           name,
-          type,
+          assessmentType,
           weight,
           dateApplied: dayjs(dateApplied).toDate(),
           subjectId,

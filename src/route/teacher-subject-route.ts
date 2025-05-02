@@ -1,141 +1,241 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { FastifyTypeInstance } from '../types/type'
 import z from 'zod'
-import { getTeacherById } from '../models/teacher'
-import {
-  createTeacherSubject,
-  getTeacherSubjectById,
-  getTeacherSubjectByTeacherId,
-  listAllTeacherSubject,
-} from '../models/teacher_subject'
-import { findSubjectByCodigo } from '../models/subject'
+import type { FastifyTypeInstance } from '../types/type'
+import { prismaClient } from '../database/script'
 
-export const teacher_Subject: FastifyPluginAsyncZod = async (
-  app: FastifyTypeInstance,
-  opts
+interface Schema {
+  teacherId: string
+  subjectId: string
+}
+
+export const TeacherSubject: FastifyPluginAsyncZod = async (
+  app: FastifyTypeInstance
 ) => {
   app.post(
-    '/teacher_subject',
+    '/teacher-subject',
     {
       schema: {
-        tags: ['teacher_subject'],
-        description: 'Create relationship between teacher and subject',
         body: z.object({
-          teacher_id: z.string(),
-          disciplineId: z.string(),
+          teacherId: z.string(),
+          subjectId: z.string(),
         }),
+        response: {
+          201: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.object({
+              id: z.string(),
+              teacherId: z.string(),
+              subjectId: z.string(),
+            }),
+          }),
+        },
       },
     },
     async (request, reply) => {
-      try {
-        const { teacher_id, disciplineId } = request.body
-        // Verificar se o teacher_id existe
-        const teacherExists = await getTeacherById(teacher_id)
-        if (!teacherExists) {
-          return reply.status(404).send({
-            message: 'Teacher not found',
-          })
-        }
+      const { teacherId, subjectId } = request.body
 
-        // Verificar se o disciplineId existe
-        const disciplineExists = await findSubjectByCodigo(disciplineId)
-        if (!disciplineExists) {
-          return reply.status(404).send({
-            message: 'Discipline not found',
-          })
-        }
+      const teacher_subject = await prismaClient.teacherSubject.create({
+        data: {
+          teacherId,
+          subjectId,
+        },
+      })
 
-        const teacher_subject = await createTeacherSubject({
-          teacher_id,
-          disciplineId,
-        })
-        reply.code(201).send({
-          message: 'Relation created successfully',
-          teacher_subject,
-        })
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          // Retorna detalhes de erro de validação
-          return reply.status(400).send({
-            message: 'Validation error',
-            details: error.errors,
-          })
-        }
-
-        // Caso de erro genérico, como falha no banco
-        console.error('Database or other server error: ', error)
-        reply.code(500).send({
-          message: 'Internal server error, please try again later.',
-        })
-      }
+      return reply.code(201).send({
+        success: true,
+        message: 'Teacher subject created successfully',
+        data: teacher_subject,
+      })
     }
   )
 
   app.get(
-    '/teacher_subject',
+    '/teacher-subject',
     {
       schema: {
-        tags: ['teacher_subject'],
-        description: 'List all teacher_subjects',
+        response: {
+          200: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.array(
+              z.object({
+                id: z.string(),
+                teacherId: z.string(),
+                subjectId: z.string(),
+                Subject: z.any(),
+                teacher: z.any(),
+              })
+            ),
+          }),
+        },
       },
     },
     async (request, reply) => {
-      try {
-        const teacher_subjects = await listAllTeacherSubject()
+      const teacher_subjects = await prismaClient.teacherSubject.findMany({
+        select: {
+          id: true,
+          teacherId: true,
+          subjectId: true,
+          Subject: true,
+          teacher: true,
+        },
+      })
 
-        reply.send(teacher_subjects)
-      } catch (error) {
-        console.error('Database or other server error: ', error)
-        reply.code(500).send({
-          message: 'Internal server error, please try again later.',
-        })
-      }
+      return reply.code(200).send({
+        success: true,
+        message: 'Teacher subjects retrieved successfully',
+        data: teacher_subjects,
+      })
     }
   )
 
   app.get(
-    '/teacher_subject/:id',
+    '/teacher-subject/:id',
     {
       schema: {
-        tags: ['teacher_subject'],
-        description: 'Get teacher_subject by id',
         params: z.object({
           id: z.string(),
         }),
+        response: {
+          200: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.object({
+              id: z.string(),
+              teacherId: z.string(),
+              subjectId: z.string(),
+            }),
+          }),
+          404: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.null(),
+          }),
+        },
       },
     },
     async (request, reply) => {
       const { id } = request.params
-      const teacher_subject = await getTeacherSubjectById(id)
+      const teacher_subject = await prismaClient.teacherSubject.findUnique({
+        where: { id },
+      })
+
       if (!teacher_subject) {
-        return reply.status(404).send({
-          message: 'Teacher_subject not found',
+        return reply.code(404).send({
+          success: false,
+          message: 'Teacher subject not found',
+          data: null,
         })
       }
-      reply.send(teacher_subject)
+
+      return reply.code(200).send({
+        success: true,
+        message: 'Teacher subject retrieved successfully',
+        data: teacher_subject,
+      })
     }
   )
 
   app.get(
-    '/teacher_subject/teacher/:teacher_id',
+    '/teacher-subject/teacher/:teacherId',
     {
       schema: {
-        tags: ['teacher_subject'],
-        description: 'Get teacher_subject by teacher_id',
         params: z.object({
-          teacher_id: z.string(),
+          teacherId: z.string(),
         }),
       },
     },
     async (request, reply) => {
-      const { teacher_id } = request.params
-      const teacher_subject = await getTeacherSubjectByTeacherId(teacher_id)
-      if (!teacher_subject) {
-        return reply.status(404).send({
-          message: 'Teacher_subject not found',
-        })
-      }
-      reply.send(teacher_subject)
+      const { teacherId } = request.params
+      const teacher_subjects = await prismaClient.teacherSubject.findMany({
+        where: { teacherId },
+        include: {
+          Subject: {},
+          teacher: {},
+        },
+      })
+
+      return reply.code(200).send({
+        success: true,
+        message: 'Teacher subjects retrieved successfully',
+        data: teacher_subjects,
+      })
+    }
+  )
+
+  app.delete(
+    '/teacher-subject/:id',
+    {
+      schema: {
+        params: z.object({
+          id: z.string(),
+        }),
+        response: {
+          200: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.object({
+              id: z.string(),
+              teacherId: z.string(),
+              subjectId: z.string(),
+            }),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params
+      const teacher_subject = await prismaClient.teacherSubject.delete({
+        where: { id },
+      })
+
+      return reply.code(200).send({
+        success: true,
+        message: 'Teacher subject deleted successfully',
+        data: teacher_subject,
+      })
+    }
+  )
+
+  app.patch(
+    '/teacher-subject/:id',
+    {
+      schema: {
+        params: z.object({
+          id: z.string(),
+        }),
+        body: z.object({
+          teacherId: z.string().optional(),
+          subjectId: z.string().optional(),
+        }),
+        response: {
+          200: z.object({
+            success: z.boolean(),
+            message: z.string(),
+            data: z.object({
+              id: z.string(),
+              teacherId: z.string(),
+              subjectId: z.string(),
+            }),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params
+      const data = request.body
+
+      const teacher_subject = await prismaClient.teacherSubject.update({
+        where: { id },
+        data: { ...data },
+      })
+
+      return reply.code(200).send({
+        success: true,
+        message: 'Teacher subject updated successfully',
+        data: teacher_subject,
+      })
     }
   )
 }

@@ -7,7 +7,9 @@ import {
   getTeacherById,
   updateTeacher,
   deleteTeacher,
+  getTeacherByEmail,
 } from '../models/teacher'
+import { findLoginByEmail } from '../models/login'
 
 export const teachersData: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -20,32 +22,43 @@ export const teachersData: FastifyPluginAsyncZod = async (
         tags: ['teacher'],
         description: 'Create teacher',
         body: z.object({
-          fullName: z.string().min(1, 'Full name is required'), // Validando que o nome não está vazio
+          surname: z.string().min(1, 'surname is required'),
+          name: z.string().min(1, 'Full name is required'), // Validando que o nome não está vazio
           email: z.string().email('Invalid email format'), // Validando o formato do email
-          contact: z.string().min(1, 'Contact is required'), // Validando que o contato não está vazio
-          profession: z.string().min(1, 'Profession is required'), // Validando que a profissão não está vazia
-          type: z.enum(['COORDENADOR', 'DOCENTE', 'AUXILIAR']), // Validando o tipo
+          teacherType: z.enum(['COORDENADOR', 'DOCENTE', 'AUXILIAR']), // Validando o tipo
+          statusTeacher: z.enum(['ATIVO', 'INATIVO']),
         }),
       },
     },
     async (request, reply) => {
       try {
         // Desestruturando os dados da requisição
-        const { fullName, email, contact, profession, type } = request.body
+        const { surname, name, email, teacherType, statusTeacher } =
+          request.body
+
+        const getEmail = await findLoginByEmail(email)
+        if (!getEmail) {
+          reply.code(404).send({ sucess: false, message: 'Invalid data' })
+          return
+        }
+
+        console.log('data founded: ', getEmail)
 
         // Chama a função para criar o professor
         const teacher = await createTeacher({
-          fullName,
-          email,
-          contact,
-          profession,
-          type,
+          surname,
+          name,
+          email: getEmail.email,
+          contact: getEmail.contact,
+          teacherType,
+          statusTeacher,
+          loginId: getEmail.id,
         })
 
-        // Se a criação for bem-sucedida, retorne o status 201 (Created)
+        // // Se a criação for bem-sucedida, retorne o status 201 (Created)
         reply.status(201).send({
           message: 'Teacher created successfully',
-          teacher, // Retorne os dados do professor criado
+          // teacher, // Retorne os dados do professor criado
         })
       } catch (error) {
         // Se ocorrer um erro durante a criação, retorne um erro 500 (Internal Server Error)
@@ -108,6 +121,40 @@ export const teachersData: FastifyPluginAsyncZod = async (
     }
   )
 
+  app.get(
+    '/teacher/email/:email',
+    {
+      schema: {
+        tags: ['teacher'],
+        description: 'seache teacher data by email',
+        params: z.object({
+          email: z.string().email('Invalid email format'),
+        }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { email } = request.params
+        const teacher = await getTeacherByEmail(email)
+
+        if (teacher) {
+          reply
+            .status(200)
+            .send({ sucess: true, message: 'teacher founded', data: teacher })
+        } else {
+          reply
+            .status(404)
+            .send({ sucess: false, message: 'Teacher not found' })
+        }
+      } catch (error) {
+        console.error('Error getting teacher by email:', error)
+        reply.status(500).send({
+          message: 'An error occurred while getting the teacher',
+          error: (error as Error).message,
+        })
+      }
+    }
+  )
   // Rota para atualizar professor
   app.put(
     '/teacher/:id',
@@ -119,25 +166,39 @@ export const teachersData: FastifyPluginAsyncZod = async (
           id: z.string().min(1, 'Teacher ID is required'),
         }),
         body: z.object({
-          fullName: z.string().min(1, 'Full name is required').optional(),
+          surname: z.string().min(1, 'surname is required').optional(),
+          name: z.string().min(1, 'Full name is required').optional(),
           email: z.string().email('Invalid email format').optional(),
           contact: z.string().min(1, 'Contact is required').optional(),
-          profession: z.string().min(1, 'Profession is required').optional(),
-          type: z.enum(['COORDENADOR', 'DOCENTE', 'AUXILIAR']).optional(),
+          teacherType: z
+            .enum(['COORDENADOR', 'DOCENTE', 'AUXILIAR'])
+            .optional(),
+          statusTeacher: z.enum(['ATIVO', 'INATIVO']).optional(),
+          loginId: z.string().optional(),
         }),
       },
     },
     async (request, reply) => {
       try {
         const { id } = request.params
-        const { fullName, email, contact, profession, type } = request.body
-
-        const updatedTeacher = await updateTeacher(id, {
-          fullName,
+        const {
+          surname,
+          name,
           email,
           contact,
-          profession,
-          type,
+          teacherType,
+          statusTeacher,
+          loginId,
+        } = request.body
+
+        const updatedTeacher = await updateTeacher(id, {
+          surname,
+          name,
+          email,
+          contact,
+          teacherType,
+          statusTeacher,
+          loginId,
         })
 
         if (updatedTeacher) {

@@ -1,81 +1,82 @@
 import { prismaClient } from '../database/script'
 
-interface CreateStudentSubjectRequest {
+interface student_subject_schema {
   studentId: string
   subjectId: string
 }
 
-export const StudentSubjectModel = {
-  async create(data: CreateStudentSubjectRequest) {
-    return await prismaClient.studentSubject.create({
-      data: {
-        studentId: data.studentId,
-        subjectId: data.subjectId,
-      },
-    })
-  },
+export async function createStudentSubject({
+  studentId,
+  subjectId,
+}: student_subject_schema) {
+  const student_subject = await prismaClient.studentSubject.create({
+    data: {
+      studentId,
+      subjectId,
+    },
+  })
 
-  async findById(id: string) {
-    return await prismaClient.studentSubject.findUnique({
-      where: { id },
-      include: {
-        student: true,
-        Subject: true,
-      },
-    })
-  },
-
-  async findByStudentId(studentId: string) {
-    return await prismaClient.studentSubject.findMany({
-      where: { studentId },
+  return student_subject
+}
+export async function listAllStudentsSubjects() {
+  try {
+    // Realiza a consulta no banco de dados para buscar todas as disciplinas dos estudantes
+    const result = await prismaClient.studentSubject.findMany({
       include: {
         Subject: true,
-      },
-    })
-  },
-
-  async findBySubjectId(subjectId: string) {
-    return await prismaClient.studentSubject.findMany({
-      where: { subjectId },
-      include: {
         student: true,
       },
     })
-  },
 
-  async delete(id: string) {
-    return await prismaClient.studentSubject.delete({
-      where: { id },
-    })
-  },
+    // Retorna o resultado obtido da consulta
+    return result
+  } catch (error) {
+    // Tratamento de erros, caso ocorra algum problema na consulta
+    console.error('Error fetching all student subjects:', error)
+    throw new Error('Failed to fetch student subjects') // Lança um erro personalizado
+  }
+}
 
-  async deleteByStudentId(studentId: string) {
-    return await prismaClient.studentSubject.deleteMany({
-      where: { studentId },
-    })
-  },
-
-  async deleteBySubjectId(subjectId: string) {
-    return await prismaClient.studentSubject.deleteMany({
-      where: { subjectId },
-    })
-  },
-
-  async getStudentSubjects(studentId: string) {
-    return await prismaClient.studentSubject.findMany({
-      where: { studentId },
+export async function getStudentSubjectsByStudentId(id: string) {
+  try {
+    // Realiza a consulta no banco de dados para buscar as disciplinas do estudante com o `id` fornecido
+    const studentSubjects = await prismaClient.studentSubject.findMany({
+      where: {
+        studentId: id, // Filtra as disciplinas pelo ID do estudante
+      },
       include: {
-        Subject: true,
+        Subject: {},
+        student: {},
       },
     })
-  },
 
-  async getSubjectStudents(subjectId: string) {
-    return await prismaClient.studentSubject.findMany({
-      where: { subjectId },
+    // Retorna as disciplinas encontradas
+    return studentSubjects
+  } catch (error) {
+    // Tratamento de erro caso a consulta falhe
+    console.error(`Error fetching subjects for student with ID ${id}:`, error)
+    throw new Error('Failed to fetch student subjects') // Lança um erro customizado
+  }
+}
+
+export async function getStudentSubjectsBySubjectId(id: string) {
+  try {
+    // Realiza a consulta no banco de dados para buscar as disciplinas do estudante com o `id` fornecido
+    const studentSubjects = await prismaClient.studentSubject.findMany({
+      where: {
+        subjectId: id, // Filtra as disciplinas pelo ID do estudante
+      },
       include: {
-        student: true,
+        Subject: {},
+        student: {},
       },
     })
-  },
+
+    // Retorna as disciplinas encontradas
+    return studentSubjects
+  } catch (error) {
+    // Tratamento de erro caso a consulta falhe
+    console.error(`Error fetching subjects for student with ID ${id}:`, error)
+    throw new Error('Failed to fetch student subjects') // Lança um erro customizado
+  }
 }

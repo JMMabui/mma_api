@@ -199,6 +199,7 @@ export const Subjects: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
+      // console.log('api iniciado', request.params)
       const { courseId } = request.params
 
       try {

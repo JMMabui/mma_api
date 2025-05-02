@@ -21,17 +21,17 @@ export const Registrations: FastifyPluginAsyncZod = async (
         description:
           'create relation between student and course, and see status if it is subscribed or not',
         body: z.object({
-          course_id: z.string(),
-          student_id: z.string(),
+          courseId: z.string(),
+          studentId: z.string(),
         }),
       },
     },
     async (request, reply) => {
       try {
-        const { course_id, student_id } = request.body
+        const { courseId, studentId } = request.body
 
         // 1. Verificar se o curso ainda tem vagas disponíveis
-        const course = await findCourseById(course_id)
+        const course = await findCourseById(courseId)
 
         if (!course) {
           return reply.status(404).send({ message: 'Curso não encontrado' })
@@ -47,8 +47,8 @@ export const Registrations: FastifyPluginAsyncZod = async (
 
         // 2. Criar o registro de inscrição entre aluno e curso
         const registration = await createRegistration({
-          course_id,
-          student_id,
+          courseId,
+          studentId,
         })
 
         // 3. Atualizar o número de vagas disponíveis no curso
@@ -78,17 +78,17 @@ export const Registrations: FastifyPluginAsyncZod = async (
         description:
           'create relation between student and course, and status by default is confirmado',
         body: z.object({
-          course_id: z.string(),
-          student_id: z.string(),
+          courseId: z.string(),
+          studentId: z.string(),
         }),
       },
     },
     async (request, reply) => {
       try {
-        const { course_id, student_id } = request.body
+        const { courseId, studentId } = request.body
 
         // 1. Verificar se o curso ainda tem vagas disponíveis
-        const course = await findCourseById(course_id)
+        const course = await findCourseById(courseId)
 
         if (!course) {
           return reply.status(404).send({ message: 'Curso não encontrado' })
@@ -104,13 +104,13 @@ export const Registrations: FastifyPluginAsyncZod = async (
 
         // 2. Criar o registro de inscrição entre aluno e curso
         const registration = await createRegistrationWithConfirmationStatus({
-          course_id,
-          student_id,
+          courseId,
+          studentId,
           registrationStatus: 'CONFIRMADO',
         })
 
         // 3. Atualizar o número de vagas disponíveis no curso
-        await updateCourseVacancies(course_id)
+        await updateCourseVacancies(courseId)
 
         reply.code(201).send({
           message: 'Inscrição criada com sucesso',
@@ -184,7 +184,7 @@ export const Registrations: FastifyPluginAsyncZod = async (
 
         // Verificar se o registro existe
         const registration = await prismaClient.registration.findMany({
-          where: { student_id: id },
+          where: { studentId: id },
         })
 
         if (!registration) {
@@ -192,14 +192,14 @@ export const Registrations: FastifyPluginAsyncZod = async (
         }
 
         // Verificar se o ID do registro corresponde ao student_id (comparing `id` with `student_id`)
-        if (registration.length === 0 || registration[0].student_id !== id) {
+        if (registration.length === 0 || registration[0].studentId !== id) {
           return reply
             .status(400)
             .send({ message: 'ID do estudante não corresponde ao registro' })
         }
 
         // 1. Verificar se o curso ainda tem vagas disponíveis
-        const course = await findCourseById(registration[0].course_id)
+        const course = await findCourseById(registration[0].courseId)
 
         if (
           !course ||
@@ -212,12 +212,12 @@ export const Registrations: FastifyPluginAsyncZod = async (
         // Atualizar o status de registro para 'CONFIRMADO'
         const updatedRegistrations = await prismaClient.registration.updateMany(
           {
-            where: { student_id: id }, // Atualiza todos os registros com o mesmo student_id
+            where: { studentId: id }, // Atualiza todos os registros com o mesmo student_id
             data: { registrationStatus }, // Atualiza o status para 'CONFIRMADO'
           }
         )
 
-        const course_id = registration[0].course_id
+        const course_id = registration[0].courseId
         await updateCourseVacancies(course_id)
 
         if (updatedRegistrations.count === 0) {

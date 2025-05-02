@@ -97,37 +97,9 @@ http://localhost:3333/docs
 
 ## API Endpoints
 
-### Authentication
-- `POST /signup` - Create new user account
-- `POST /login` - User login
+### Other
 
-### Students
-- `POST /students` - Create new student
-- `GET /students` - List all students
-- `GET /students/:id` - Get student details
-
-### Courses
-- `POST /courses` - Create new course
-- `GET /course` - List all courses
-- `GET /course/:id` - Get course details
-- `GET /course-student/:id` - Get students in a course
-
-### Subjects
-- `POST /subjects` - Create new subject
-- `GET /subjects` - List all subjects
-- `GET /subjects/:id` - Get subject details
-
-### Financial
-- `POST /invoice` - Create new invoice
-- `GET /invoice/:id` - Get invoice details
-- `POST /payment` - Record payment
-- `POST /late-fee` - Add late fee
-- `POST /payment-reminder` - Create payment reminder
-
-### Academic
-- `POST /assessment` - Create assessment
-- `GET /assessment/:id` - Get assessment details
-- `POST /assessment-result` - Record assessment results
+- `GET /student-course/:id`
 
 ## CORS Configuration
 

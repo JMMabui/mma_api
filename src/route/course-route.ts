@@ -200,7 +200,7 @@ export const Courses: FastifyPluginAsyncZod = async (
 
       // Contando o número de estudantes registrados no curso específico
       const countStudentRegistration = await prismaClient.registration.count({
-        where: { course_id: id },
+        where: { courseId: id },
       })
 
       // Retornando a resposta conforme esperado

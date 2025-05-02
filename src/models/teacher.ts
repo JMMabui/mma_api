@@ -1,28 +1,34 @@
-import type { TeacherType } from '@prisma/client'
+import type { StatusTeacher, TeacherType } from '@prisma/client'
 import { prismaClient } from '../database/script'
 
 interface Schema {
-  fullName: string
+  surname: string
+  name: string
   email: string
   contact: string
-  profession: string
-  type: TeacherType
+  teacherType: TeacherType
+  statusTeacher: StatusTeacher
+  loginId: string
 }
 
 export async function createTeacher({
-  fullName,
+  surname,
+  name,
   email,
   contact,
-  profession,
-  type,
+  teacherType,
+  statusTeacher,
+  loginId,
 }: Schema) {
   const teacher = await prismaClient.teacher.create({
     data: {
-      fullName,
+      surname,
+      name,
       email,
       contact,
-      profession,
-      type,
+      teacherType,
+      statusTeacher,
+      loginId,
     },
   })
   return teacher
@@ -46,6 +52,13 @@ export async function updateTeacher(id: string, data: Partial<Schema>) {
 export async function getTeacherById(id: string) {
   const teacher = await prismaClient.teacher.findUnique({
     where: { id },
+  })
+  return teacher
+}
+
+export async function getTeacherByEmail(email: string) {
+  const teacher = await prismaClient.teacher.findUnique({
+    where: { email },
   })
   return teacher
 }

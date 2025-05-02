@@ -27,6 +27,7 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
+      console.log('api iniciado post /students_subjects')
       try {
         const { studentId, subjectsIds } = request.body
 
@@ -34,6 +35,7 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
         const studentExists = await findStudentById(studentId)
         if (!studentExists) {
           return reply.status(404).send({
+            success: false,
             message: 'Student not found',
           })
         }
@@ -42,27 +44,32 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
         const disciplines = await findSubjectsByCodigos(subjectsIds) // Alteração para buscar todas as disciplinas de uma vez
         if (disciplines.length !== subjectsIds.length) {
           return reply.status(404).send({
+            success: false,
             message: 'One or more disciplines not found',
+            data: disciplines,
           })
         }
 
         // Criar as relações entre o estudante e as disciplinas
-        await Promise.all(
-          subjectsIds.map(disciplineId =>
+        const studentSubject = await Promise.all(
+          subjectsIds.map(subjectId =>
             createStudentSubject({
               studentId,
-              subjectId: disciplineId,
+              subjectId,
             })
           )
         )
 
         reply.code(201).send({
+          success: true,
           message: 'Relations created successfully',
+          data: studentSubject,
         })
       } catch (error) {
         if (error instanceof z.ZodError) {
           // Retorna detalhes de erro de validação
           return reply.status(400).send({
+            success: false,
             message: 'Validation error',
             details: error.errors,
           })
@@ -71,7 +78,9 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
         // Caso de erro genérico, como falha no banco
         console.error('Database or other server error: ', error)
         reply.code(500).send({
+          success: false,
           message: 'Internal server error, please try again later.',
+          data: [],
         })
       }
     }
@@ -86,9 +95,35 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      const student_subject = await listAllStudentsSubjects()
-      console.log(student_subject)
-      return student_subject
+      // console.log('api iniciado /students_subjects')
+      try {
+        const student_subject = await listAllStudentsSubjects()
+
+        if (student_subject.length === 0) {
+          reply.status(404).send({
+            success: false,
+            message: 'No relationships found between students and subjects',
+            data: [],
+          })
+          return
+        }
+        return reply.send({
+          success: true,
+          message: 'Relationships found between students and subjects',
+          data: student_subject,
+        })
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('Error fetching student subjects:', error.message)
+        } else {
+          console.error('Error fetching student subjects:', error)
+        }
+        reply.status(500).send({
+          success: false,
+          message: 'Internal server error',
+          data: [],
+        })
+      }
     }
   )
 
@@ -104,25 +139,54 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
+      // console.log('api iniciado', request.params)
       const { id } = request.params // Pegando o `id` do estudante a partir dos parâmetros da URL
 
       try {
+        //Verificar se o estudante existe
+        const student = await findStudentById(id)
+        if (!student) {
+          return reply.status(404).send({
+            success: false,
+            message: 'Student not found',
+            data: [],
+          })
+        }
+
         // Buscando as disciplinas do estudante com o `id` fornecido
         const studentSubject = await getStudentSubjectsByStudentId(id)
 
+        const filteredStudentSubject = studentSubject.filter(
+          subject =>
+            subject.status === 'INSCRITO' && subject.result === 'EM_ANDAMENTO'
+        )
+
         // Se não encontrar nada, retorna uma mensagem de erro
-        if (studentSubject.length === 0) {
-          reply
-            .status(404)
-            .send({ message: 'No subjects found for this student.' })
-          return
-        }
+        // if (studentSubject.length === 0) {
+        //   return reply.status(404).send({
+        //     success: true,
+        //     message: 'No subjects found for this student.',
+        //     data: [],
+        //   })
+        // }
 
         // Retorna as disciplinas encontradas
-        return studentSubject
+        return reply.send({
+          success: true,
+          message: 'Subjects found for this student.',
+          data: studentSubject,
+        })
       } catch (error) {
-        console.error('Error fetching student subjects:', error)
-        reply.status(500).send({ message: 'Internal server error' })
+        if (error instanceof Error) {
+          console.error('Error fetching student subjects:', error.message)
+        } else {
+          console.error('Error fetching student subjects:', error)
+        }
+        reply.status(500).send({
+          success: false,
+          message: 'Internal server error',
+          data: [],
+        })
       }
     }
   )
@@ -145,20 +209,14 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       try {
         // Buscando as disciplinas do estudante com o `id` fornecido
         const student = await findStudentById(id)
-        if (!student) {
-          return reply.status(404).send({
-            sucess: false,
-            message: 'Student not found',
-          })
-        }
-        // Verifica se o estudante existe
+
         const studentSubject = await getStudentSubjectsBySubjectId(id)
 
         // Se não encontrar nada, retorna uma mensagem de erro
         if (studentSubject.length === 0) {
           return reply.status(404).send({
-            sucess: false,
-            message: 'No subjects found for this student.',
+            sucess: true,
+            message: 'No students was found for this subject.',
             data: [],
           })
         }
