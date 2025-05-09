@@ -145,23 +145,88 @@ model LoginData {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime?    @map("updated_at")
 
-  student Student?  @relation
-  Teacher Teacher[]
+  student   Student?    @relation
+  Teacher   Teacher[]
+  Employees Employees[]
 
   @@map("login_data")
 }
 
-model Employeers {
-  id          String       @id @default(uuid())
-  surname     String
-  name        String
-  email       String       @unique
-  contact     String
-  jobPosition Job_Position @map("job_position")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+// ===== MODELOS DE USUÁRIOS =====
+
+model User {
+  id                      String        @id @default(uuid())
+  name                    String
+  surname                 String
+  dateOfBirth             DateTime      @map("date_of_birth")
+  gender                  Gender
+  identificationDocument  DocumentType  @map("identification_document")
+  identificationNumber    String        @map("identification_number")
+  documentIssuedAt        DateTime      @map("document_issued_at")
+  documentExpiredAt       DateTime      @map("document_expired_at")
+  taxIdentificationNumber Int           @map("tax_identification_number")
+  maritalStatus           MaritalStatus @map("marital_status")
+  address                 String
+  Employees               Employees[]
+
+  @@map("user")
+}
+
+enum EmployeeType {
+  PERMANENT
+  FIXED_TERM
+  UNCERTAIN_TERM
+  PART_TIME
+  INTERN
+  APPRENTICE
+}
+
+model Employees {
+  id                String              @id @default(uuid())
+  userId            String              @map("user_id")
+  employeeType      EmployeeType        @map("employee_type")
+  jobTitle          String              @map("job_position")
+  department        String
+  dateOfHire        DateTime            @map("date_of_hire")
+  salary            Float
+  loginId           String              @map("login_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  user              User                @relation(fields: [userId], references: [id])
+  login             LoginData           @relation(fields: [loginId], references: [id])
+  EmployeeEducation EmployeeEducation[]
+  EmployeeBank      EmployeeBank[]
 
   @@map("employeers")
+}
+
+model EmployeeEducation {
+  id              String    @id @default(uuid())
+  employeerId     String    @map("employeer_id")
+  institutionName String    @map("institution_name")
+  degree          String
+  fieldOfStudy    String    @map("field_of_study")
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  employeer       Employees @relation(fields: [employeerId], references: [id])
+
+  @@map("employeer_education")
+}
+
+model EmployeeBank {
+  id            String    @id @default(uuid())
+  employeerId   String    @map("employeer_id")
+  bankName      String    @map("bank_name")
+  accountNumber String    @map("account_number")
+  accountType   String    @map("account_type")
+  accountHolder String    @map("account_holder")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  employeer     Employees @relation(fields: [employeerId], references: [id])
+
+  @@map("employeer_bank")
 }
 
 // ===== MODELOS DE ESTUDANTES =====

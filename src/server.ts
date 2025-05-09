@@ -26,6 +26,10 @@ import { PaymentReminderRoutes } from './route/payment-reminder-route'
 import { LateFeeRoutes } from './route/late-fee-route'
 import { InvoiceHistoryRoutes } from './route/invoice-history-route'
 import { corsOptions } from './config/cors'
+import { UserRoutes } from './route/user/user-route'
+import { EmployeeRoute } from './route/employees/employee-route'
+import { EmployeeEducationRoute } from './route/employees/employeeEducationRoute'
+import { EmployeeBankRoute } from './route/employees/employeeBank-route'
 
 const app = fastify().withTypeProvider<ZodTypeProvider>()
 
@@ -64,11 +68,18 @@ app.register(TeacherSubject)
 app.register(Assessments)
 app.register(AssessmentsResult)
 
+// Register the routes for invoice and payment
 app.register(InvoiceRoutes)
 app.register(PaymentRoutes)
 app.register(PaymentReminderRoutes)
 app.register(LateFeeRoutes)
 app.register(InvoiceHistoryRoutes)
+
+// Register the routes for user and employee
+app.register(UserRoutes)
+app.register(EmployeeRoute)
+app.register(EmployeeEducationRoute)
+app.register(EmployeeBankRoute)
 
 app
   .listen({

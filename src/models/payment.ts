@@ -5,8 +5,8 @@ interface CreatePaymentRequest {
   invoiceId: string
   amount: number
   paymentMethod: PaymentMethod
-  reference?: string
-  description?: string
+  reference: string | null
+  description: string | null
 }
 
 interface UpdatePaymentRequest {
@@ -22,8 +22,8 @@ interface Payment {
   amount: number
   paymentMethod: PaymentMethod
   paymentDate: Date
-  reference?: string
-  description?: string
+  reference: string | null
+  description: string | null
 }
 
 export const PaymentModel = {
