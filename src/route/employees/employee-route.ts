@@ -4,7 +4,7 @@ import z, { date } from 'zod'
 import dayjs from 'dayjs'
 import { employeeModel } from '../../models/employees/employee'
 import { userModel } from '../../models/user'
-import { findLoginById } from '../../models/login'
+import { findLoginByEmail, findLoginById } from '../../models/login'
 
 export const EmployeeRoute: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -43,6 +43,7 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
             }),
           salary: z.number().positive(),
           loginId: z.string().uuid(),
+          status: z.enum(['ATIVO', 'INATIVO']),
         }),
       },
     },
@@ -56,6 +57,7 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
           dateOfHire,
           salary,
           loginId,
+          status,
         } = request.body
 
         // Validate the userId and loginId against the database if necessary
@@ -89,6 +91,7 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
           dateOfHire,
           salary,
           loginId,
+          status,
         })
         if (!employee) {
           return reply.status(500).send({
@@ -145,6 +148,49 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
       }
     }
   )
+
+  app.get(
+    '/employee/email/:email',
+    {
+      schema: {
+        tags: ['employee'],
+        summary: 'Get employee data by login id',
+        description: 'Get employee data login id',
+        params: z.object({
+          email: z.string().email(),
+        }),
+      },
+    },
+    async (request, reply) => {
+      // console.log('api iniciado')
+      try {
+        const { email } = request.params
+
+        const login = await findLoginByEmail(email)
+        const loginId = login?.id
+
+        if (!loginId) {
+          return reply.status(404).send('Login not found')
+        }
+
+        const employee = await employeeModel.findByLoginId(loginId)
+        if (!employee) {
+          return reply.status(404).send('Employee not found')
+        }
+
+        return reply
+          .status(200)
+          .send({ sucess: true, message: 'Employee found', data: employee })
+      } catch (error) {
+        console.error('Error creating employee:', error)
+        return reply.status(500).send({
+          message: 'Internal server error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+  )
+
   app.get(
     '/employee/:id',
     {
@@ -247,6 +293,7 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
             }),
           salary: z.number().positive(),
           loginId: z.string().uuid(),
+          status: z.enum(['ATIVO', 'INATIVO']).optional(),
         }),
       },
     },
@@ -261,6 +308,7 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
           dateOfHire,
           salary,
           loginId,
+          status,
         } = request.body
 
         // Validate the userId and loginId against the database if necessary
@@ -287,6 +335,7 @@ export const EmployeeRoute: FastifyPluginAsyncZod = async (
           dateOfHire,
           salary,
           loginId,
+          status,
         })
         if (!updatedEmployee) {
           return reply.status(500).send({

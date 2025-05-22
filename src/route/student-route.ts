@@ -1,15 +1,16 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import z from 'zod'
 import dayjs from 'dayjs'
-import {
-  createStudents,
-  deleteStudent,
-  listAllStudents,
-} from '../models/students'
+
 import type { FastifyTypeInstance } from '../types/type'
 import { prismaClient } from '../database/script'
 import { createLogin } from '../models/login'
 import { SuiteContext } from 'node:test'
+import {
+  createStudents,
+  deleteStudent,
+  listAllStudents,
+} from '../models/students/students'
 
 export const Students: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,

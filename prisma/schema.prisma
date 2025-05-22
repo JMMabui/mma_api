@@ -189,6 +189,7 @@ model Employees {
   department        String
   dateOfHire        DateTime            @map("date_of_hire")
   salary            Float
+  status            StatusTeacher       @default(INATIVO)
   loginId           String              @map("login_id")
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")
@@ -563,13 +564,15 @@ model InvoiceHistory {
 }
 
 model LateFee {
-  id        String   @id @default(uuid())
-  invoiceId String   @map("invoice_id")
+  id        String        @id @default(uuid())
+  invoiceId String        @map("invoice_id")
   amount    Float
-  daysLate  Int      @map("days_late")
-  appliedAt DateTime @map("applied_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  daysLate  Int           @map("days_late")
+  appliedAt DateTime      @map("applied_at")
+  payedAt   DateTime?     @map("paid_at")
+  status    InvoiceStatus @default(PENDENTE) // PAGO, NAO_PAGO
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
 

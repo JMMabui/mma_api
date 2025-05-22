@@ -1,9 +1,34 @@
-import { InvoiceModel } from '../models/invoice'
 import { z, ZodError } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { FastifyTypeInstance } from '../types/type'
-import { getRegistrationByCourseId } from '../models/registration'
+import type { FastifyTypeInstance } from '../../types/type'
 import type { Month } from '@prisma/client'
+import { getRegistrationByCourseId } from '../../models/students/registration'
+import { InvoiceModel } from '../../models/payment/invoice'
+import { LateFeeModel } from '../../models/payment/late_fee'
+import { authenticate } from '../../middleware/auth'
+import { PaymentReminderModel } from '../../models/payment/payment_reminder'
+
+// Função para calcular o valor da fatura com base no tipo, nível do curso e período
+function calculateInvoiceAmount(
+  type: string,
+  levelCourse: string,
+  period: string
+): number {
+  if (type !== 'MENSALIDADE') return 0
+
+  const tabela: Record<string, Record<string, number>> = {
+    LICENCIATURA: { LABORAL: 4500, POS_LABORAL: 5200 },
+    MESTRADO: { LABORAL: 5500, POS_LABORAL: 6200 },
+    TECNICO_MEDIO: { LABORAL: 3500, POS_LABORAL: 4200 },
+    CURTA_DURACAO: { LABORAL: 2500, POS_LABORAL: 3200 },
+    RELIGIOSO: { LABORAL: 1500, POS_LABORAL: 2200 },
+  }
+
+  const curso = tabela[levelCourse]
+  if (!curso) return 0
+
+  return curso[period] ?? 0
+}
 
 export const InvoiceRoutes: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance
@@ -12,10 +37,11 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
   app.post(
     '/invoice',
     {
+      // preHandler: [authenticate],
       schema: {
         tags: ['invoice'],
-        summary: 'Create a new invoice',
-        description: 'Create a new invoice for a student and course',
+        summary: 'Criar nova fatura',
+        description: 'Gera faturas para um estudante em um curso específico',
         body: z.object({
           studentId: z.string(),
           courseId: z.string(),
@@ -48,112 +74,72 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      console.log('Creating invoice...')
-      console.log('Request body:', request.body)
+      try {
+        const { studentId, courseId, type, dueDate, months, year } =
+          request.body
+        const invoiceYear = year ?? new Date().getFullYear()
 
-      // Desestruturação correta com 'months'
-      const { studentId, courseId, type, dueDate, months } = request.body
+        const registration = await getRegistrationByCourseId(courseId)
+        if (!registration || registration.length === 0) {
+          return reply.code(404).send({
+            success: false,
+            message: 'Registro do curso não encontrado',
+          })
+        }
 
-      // Pega o primeiro mês do array 'months'
-      const selectedMonth = months[0]
+        const { period, levelCourse } = registration[0].course
 
-      console.log('Selected month:', selectedMonth) // Verificando o valor de selectedMonth
+        const amount = calculateInvoiceAmount(type, levelCourse, period)
 
-      // get actual year
-      const currentYear = new Date().getFullYear()
-      const currentMonth = new Date().getMonth() + 1
-
-      // O restante do código continua igual
-      const registration = await getRegistrationByCourseId(courseId)
-      const getCourse = registration.map(
-        getRegistration => getRegistration.course
-      )
-      const getStudent = registration.map(
-        getRegistration => getRegistration.student
-      )
-
-      const period = getCourse[0].period
-      const levelCourse = getCourse[0].levelCourse
-
-      let amount: number | undefined
-      if (type === 'MENSALIDADE') {
-        if (levelCourse === 'LICENCIATURA') {
-          if (period === 'LABORAL') {
-            amount = 4500.0
-          } else {
-            amount = 5200.0
-          }
-        } else if (levelCourse === 'MESTRADO') {
-          if (period === 'LABORAL') {
-            amount = 5500.0
-          } else {
-            amount = 6200.0
-          }
-        } else if (levelCourse === 'TECNICO_MEDIO') {
-          if (period === 'LABORAL') {
-            amount = 3500.0
-          } else {
-            amount = 4200.0
-          }
-        } else if (levelCourse === 'CURTA_DURACAO') {
-          if (period === 'LABORAL') {
-            amount = 2500.0
-          } else {
-            amount = 3200.0
-          }
-        } else if (levelCourse === 'RELIGIOSO') {
-          if (period === 'LABORAL') {
-            amount = 1500.0
-          } else {
-            amount = 2200.0
+        // Verifica se já existem faturas para os meses selecionados
+        for (const month of months) {
+          const existingInvoice =
+            await InvoiceModel.findByStudentIdCourseIdMonthYear(
+              studentId,
+              courseId,
+              month,
+              invoiceYear
+            )
+          if (existingInvoice) {
+            return reply.code(409).send({
+              success: false,
+              message: `Fatura já existe para o mês ${month} de ${invoiceYear}`,
+            })
           }
         }
-      }
 
-      const existingInvoice =
-        await InvoiceModel.findByStudentIdCourseIdMonthYear(
-          studentId,
-          courseId,
-          selectedMonth,
-          currentYear
+        // Cria faturas para os meses selecionados
+        const invoices = await Promise.all(
+          months.map(month =>
+            InvoiceModel.create({
+              studentId,
+              courseId,
+              type,
+              amount,
+              dueDate: new Date(dueDate),
+              month,
+              year: invoiceYear,
+            })
+          )
         )
-
-      if (existingInvoice) {
-        return reply.code(409).send({
-          success: false,
-          message: 'Invoice already exists for the selected month and year',
-        })
-      }
-
-      try {
-        const invoice = await InvoiceModel.create({
-          studentId,
-          courseId,
-          type,
-          amount: amount ?? 0,
-          dueDate: new Date(dueDate),
-          month: selectedMonth,
-          year: currentYear,
-        })
 
         return reply.code(201).send({
           success: true,
-          message: 'Invoice created successfully',
-          data: invoice,
+          message: 'Faturas criadas com sucesso',
+          data: invoices,
         })
       } catch (error) {
         if (error instanceof ZodError) {
           return reply.code(400).send({
             success: false,
-            message: 'Invalid request body',
-            error: error.message,
+            message: 'Dados inválidos na requisição',
+            error: error.errors,
           })
         }
-        console.error('Error creating invoice:', error)
+        console.error('Erro ao criar faturas:', error)
         return reply.code(500).send({
           success: false,
-          message: 'Error creating invoice',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          message: 'Erro interno ao criar faturas',
         })
       }
     }
@@ -163,6 +149,7 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
   app.get(
     '/invoice',
     {
+      // preHandler: [authenticate],
       schema: {
         tags: ['invoice'],
         summary: 'Get all invoices',
@@ -172,16 +159,64 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
     async (request, reply) => {
       try {
         const invoices = await InvoiceModel.findAll()
-        if (!invoices) {
-          return reply.code(404).send({
-            success: false,
-            message: 'No invoices found',
-          })
+
+        const today = new Date()
+
+        // 1. Filtrar faturas com status diferente de "PAGO" ou "CANCELADO"
+        const pendingInvoices = invoices.filter(invoice => {
+          return invoice.status !== 'PAGO' && invoice.status !== 'CANCELADO'
+        })
+
+        // 2. Mapear e calcular diferença de dias + 20% se vencido há mais de 10 dias
+        const checkLateFeePossibility = pendingInvoices.map(invoice => {
+          const dueDate = new Date(invoice.dueDate)
+          const dayDiff = Math.floor(
+            (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+          )
+          let penalty = 0
+
+          if (dayDiff > 0 && dayDiff <= 10) {
+            penalty = invoice.amount * 0.2
+          } else if (dayDiff > 10) {
+            penalty = invoice.amount * 0.5
+          }
+
+          return {
+            ...invoice,
+            daysOverdue: dayDiff > 0 ? dayDiff : 0,
+            penalty: Number.parseFloat(penalty.toFixed(2)),
+          }
+        })
+
+        // 3. Atualizar status das faturas vencidas para "ATRASADO"
+        const overdueInvoices = checkLateFeePossibility.filter(invoice => {
+          return invoice.status !== 'PAGO' && invoice.daysOverdue > 0
+        })
+        for (const invoice of overdueInvoices) {
+          await InvoiceModel.update(invoice.id, { status: 'ATRASADO' })
+        }
+
+        // 4. Criar multas apenas para invoices válidas e que ainda não possuem multa
+        for (const invoice of checkLateFeePossibility) {
+          if (invoice.penalty > 0) {
+            await InvoiceModel.update(invoice.id, { status: 'ATRASADO' })
+            const existing = await LateFeeModel.findByInvoiceId(invoice.id)
+            if (
+              !existing ||
+              (Array.isArray(existing) && existing.length === 0)
+            ) {
+              await LateFeeModel.create({
+                invoiceId: invoice.id,
+                daysLate: invoice.daysOverdue,
+                amount: invoice.penalty,
+              })
+            }
+          }
         }
 
         return reply.code(200).send({
           success: true,
-          message: 'Invoices retrieved successfully',
+          message: 'Filtered invoices with overdue penalties',
           data: invoices,
         })
       } catch (error) {
@@ -192,6 +227,7 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
             error: error.message,
           })
         }
+
         console.error('Error retrieving invoices:', error)
         return reply.code(500).send({
           success: false,
@@ -533,6 +569,62 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
         return reply.code(500).send({
           success: false,
           message: 'Error deleting all invoices',
+        })
+      }
+    }
+  )
+
+  app.patch(
+    '/invoices/:id/status',
+    {
+      schema: {
+        tags: ['invoice'],
+        summary: 'Update invoice status',
+        description: 'Update the status of an invoice',
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        body: z.object({
+          status: z.enum([
+            'PENDENTE',
+            'PAGO',
+            'ATRASADO',
+            'CANCELADO',
+            'PARCIALMENTE_PAGO',
+          ]),
+        }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params
+        const { status } = request.body
+
+        const invoice = await InvoiceModel.updateStatus(id, status)
+
+        if (invoice.LateFee && invoice.LateFee.length > 0) {
+          await Promise.all(
+            invoice.LateFee.map(async lateFee => {
+              const lateFeeRespnse = await LateFeeModel.updatePaymentFee(
+                lateFee.id,
+                status
+              )
+              console.log('Late fee updated successfully:', lateFeeRespnse)
+            })
+          )
+        }
+
+        return reply.code(200).send({
+          success: true,
+          message: 'Invoice status updated successfully',
+          data: invoice,
+        })
+      } catch (error) {
+        console.error('Error updating invoice status:', error)
+        return reply.code(500).send({
+          success: false,
+          message: 'Error updating invoice status',
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
       }
     }

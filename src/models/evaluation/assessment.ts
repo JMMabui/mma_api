@@ -1,5 +1,5 @@
 import type { AssessmentType } from '@prisma/client'
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 
 interface assessmentRequest {
   name: string

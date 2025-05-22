@@ -4,7 +4,7 @@ import type {
   ProvincyAddress,
   DocumentType,
 } from '@prisma/client'
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 
 interface studentRequest {
   // Gerado através de uma função que gera um id único de acordo com os requisitos

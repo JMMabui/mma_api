@@ -1,5 +1,5 @@
 import type { InvoiceStatus } from '@prisma/client'
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 
 interface CreateInvoiceHistoryRequest {
   invoiceId: string
@@ -23,9 +23,9 @@ export const InvoiceHistoryModel = {
   async findById(id: string) {
     return await prismaClient.invoiceHistory.findUnique({
       where: { id },
-      include: {
-        invoice: true,
-      },
+      // include: {
+      //   invoice: true,
+      // },
     })
   },
 

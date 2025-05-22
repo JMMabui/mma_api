@@ -1,10 +1,11 @@
 import type { PaymentMethod } from '@prisma/client'
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 
 interface CreatePaymentRequest {
   invoiceId: string
   amount: number
-  paymentMethod: PaymentMethod
+  paymentMethod: PaymentMethod,
+  paymentDate: Date,
   reference: string | null
   description: string | null
 }
@@ -27,15 +28,30 @@ interface Payment {
 }
 
 export const PaymentModel = {
-  async create(data: CreatePaymentRequest) {
+  async create({
+    invoiceId,
+    amount,
+    paymentMethod,
+    paymentDate,
+    description,
+    reference,
+  }: CreatePaymentRequest) {
     return await prismaClient.payment.create({
       data: {
-        invoiceId: data.invoiceId,
-        amount: data.amount,
-        paymentMethod: data.paymentMethod,
-        paymentDate: new Date(),
-        reference: data.reference,
-        description: data.description,
+        invoiceId,
+        amount,
+        paymentMethod,
+        paymentDate,
+        reference,
+        description,
+      },
+    })
+  },
+
+  async findAllPayments() {
+    return await prismaClient.payment.findMany({
+      include: {
+        invoice: true,
       },
     })
   },

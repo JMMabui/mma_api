@@ -3,12 +3,12 @@ import { prismaClient } from '../database/script'
 
 interface createDisciplinesRequest {
   codigo: string
-  SubjectName: string
+  subjectName: string
   year_study: YearStudy
   semester: Semester
   hcs: number
   credits: number
-  SubjectType: SubjectType
+  subjectType: SubjectType
 }
 
 interface createSubjectsResponse extends createDisciplinesRequest {
@@ -18,8 +18,8 @@ interface createSubjectsResponse extends createDisciplinesRequest {
 export async function createDiscipline({
   codigo,
   credits,
-  SubjectName,
-  SubjectType,
+  subjectName,
+  subjectType,
   hcs,
   semester,
   year_study,
@@ -28,8 +28,8 @@ export async function createDiscipline({
     data: {
       codigo,
       credits,
-      SubjectName,
-      SubjectType,
+      subjectName,
+      subjectType,
       hcs,
       semester,
       year_study,
@@ -42,8 +42,8 @@ export async function createDiscipline({
 export async function createSubjects({
   codigo,
   credits,
-  SubjectName,
-  SubjectType,
+  subjectName,
+  subjectType,
   hcs,
   semester,
   year_study,
@@ -53,8 +53,8 @@ export async function createSubjects({
     data: {
       codigo,
       credits,
-      SubjectName,
-      SubjectType,
+      subjectName,
+      subjectType,
       hcs,
       semester,
       year_study,

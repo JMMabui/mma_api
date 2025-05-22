@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { FastifyTypeInstance } from '../types/type'
-import { PaymentModel } from '../models/payment'
+import { PaymentModel } from '../../models/payment/payment'
+import type { FastifyTypeInstance } from '../../types/type'
+import dayjs from 'dayjs'
 
 export const PaymentRoutes: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance
@@ -24,14 +25,40 @@ export const PaymentRoutes: FastifyPluginAsyncZod = async (
             'CARTAO_DEBITO',
             'OUTROS',
           ]),
-          reference: z.string().optional(),
-          description: z.string().optional(),
+          paymentDate: z
+            .string()
+            .refine(
+              date => {
+                return dayjs(date, 'YYYY-MM-DD', true).isValid()
+              },
+              { message: 'Invalid date format for document expiration date' }
+            )
+            .transform(date => {
+              return dayjs(date, 'YYYY-MM-DD').toDate()
+            }),
+          reference: z.string().nullable().optional(),
+          description: z.string().nullable().optional(),
         }),
       },
     },
     async (request, reply) => {
       try {
-        const payment = await PaymentModel.create(request.body)
+        const {
+          invoiceId,
+          amount,
+          paymentMethod,
+          paymentDate,
+          description,
+          reference,
+        } = request.body
+        const payment = await PaymentModel.create({
+          invoiceId,
+          amount,
+          paymentMethod,
+          paymentDate,
+          description: description ?? null,
+          reference: reference ?? null,
+        })
         return reply.code(201).send({
           success: true,
           message: 'Payment created successfully',
@@ -42,6 +69,43 @@ export const PaymentRoutes: FastifyPluginAsyncZod = async (
         return reply.code(500).send({
           success: false,
           message: 'Error creating payment',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+  )
+
+  app.get(
+    '/payments',
+    {
+      schema: {
+        tags: ['payment'],
+        summary: 'get all payment',
+        description: 'get all payment',
+      },
+    },
+    async (request, reply) => {
+      try {
+        const payments = await PaymentModel.findAllPayments()
+
+        if (!payments) {
+          return reply.code(404).send({
+            success: false,
+            message: 'Payment not found',
+            data: null,
+          })
+        }
+
+        return reply.code(200).send({
+          success: true,
+          message: 'Payment retrieved successfully',
+          data: payments,
+        })
+      } catch (error) {
+        console.error('Error retrieving payment:', error)
+        return reply.code(500).send({
+          success: false,
+          message: 'Error retrieving payment',
           error: error instanceof Error ? error.message : 'Unknown error',
         })
       }

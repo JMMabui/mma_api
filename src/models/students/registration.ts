@@ -1,5 +1,5 @@
 import type { Status } from '@prisma/client'
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 
 interface createRegistrationRequest {
   courseId: string

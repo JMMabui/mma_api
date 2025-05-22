@@ -1,4 +1,4 @@
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 
 interface assessmentResultRequest {
   assessmentId: string

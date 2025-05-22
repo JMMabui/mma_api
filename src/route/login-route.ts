@@ -5,6 +5,7 @@ import { prismaClient } from '../database/script'
 import jwt from 'jsonwebtoken'
 import type { FastifyTypeInstance } from '../types/type'
 import { createLogin, deleteLogin, updateLogin } from '../models/login'
+import { authenticate } from '../middleware/auth'
 
 // Função para encontrar o usuário por email
 async function findUserByEmail(email: string) {
@@ -37,6 +38,7 @@ export const Login: FastifyPluginAsyncZod = async (
   app.post(
     '/signup',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['login'],
         summary: 'create credential to login',
@@ -203,6 +205,7 @@ export const Login: FastifyPluginAsyncZod = async (
   app.get(
     '/login',
     {
+      preHandler: [authenticate],
       schema: {
         tags: ['login'],
         description: 'list all login',
@@ -232,13 +235,11 @@ export const Login: FastifyPluginAsyncZod = async (
           return reply.code(404).send({ message: 'User not found' })
         }
 
-        return reply
-          .code(200)
-          .send({
-            sucess: true,
-            message: 'Login retrieved sucessfully',
-            data: login,
-          })
+        return reply.code(200).send({
+          sucess: true,
+          message: 'Login retrieved sucessfully',
+          data: login,
+        })
       } catch (error) {
         console.error(error)
         return reply.code(500).send({ message: 'Internal server error' })

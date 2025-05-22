@@ -62,7 +62,11 @@ export const userModel = {
   },
 
   async findAllUsers() {
-    return await prismaClient.user.findMany({})
+    return await prismaClient.user.findMany({
+      include: {
+        Employees: true,
+      },
+    })
   },
 
   async findById(id: string) {

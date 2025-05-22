@@ -1,4 +1,4 @@
-import type { EmployeeType } from '@prisma/client'
+import type { EmployeeType, StatusTeacher } from '@prisma/client'
 import { prismaClient } from '../../database/script'
 
 interface createEmployeeRequest {
@@ -9,6 +9,7 @@ interface createEmployeeRequest {
   dateOfHire: Date
   salary: number
   loginId: string
+  status: StatusTeacher
 }
 
 interface updateEmployeeRequest {
@@ -20,6 +21,7 @@ interface updateEmployeeRequest {
   dateOfHire?: Date
   salary?: number
   loginId?: string
+  status?: StatusTeacher
 }
 
 export const employeeModel = {
@@ -31,6 +33,7 @@ export const employeeModel = {
     dateOfHire,
     salary,
     loginId,
+    status,
   }: createEmployeeRequest) {
     return await prismaClient.employees.create({
       data: {
@@ -41,6 +44,7 @@ export const employeeModel = {
         dateOfHire,
         salary,
         loginId,
+        status,
       },
     })
   },
@@ -59,7 +63,14 @@ export const employeeModel = {
   },
 
   async findAll() {
-    return await prismaClient.employees.findMany()
+    return await prismaClient.employees.findMany({
+      include: {
+        user: true,
+        login: true,
+        EmployeeBank: true,
+        EmployeeEducation: true,
+      },
+    })
   },
 
   async delete() {

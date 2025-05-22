@@ -1,10 +1,10 @@
-import { prismaClient } from '../database/script'
+import { prismaClient } from '../../database/script'
 import type {
   InvoiceType,
   InvoiceStatus,
   PaymentMethod,
   Month,
-} from './../../node_modules/.prisma/client/index.d'
+} from '../../../node_modules/.prisma/client/index.d'
 
 interface CreateInvoiceRequest {
   studentId: string
@@ -49,7 +49,16 @@ export const InvoiceModel = {
   },
 
   async findAll() {
-    return await prismaClient.invoice.findMany()
+    return await prismaClient.invoice.findMany({
+      include: {
+        course: true,
+        student: true,
+        payments: true,
+        LateFee: true,
+        history: true,
+        PaymentReminder: true,
+      },
+    })
   },
 
   async findById(id: string) {
@@ -162,6 +171,14 @@ export const InvoiceModel = {
         cancelledBy: data.cancelledBy,
         cancellationReason: data.cancellationReason,
       },
+    })
+  },
+
+  async updateStatus(id: string, status: InvoiceStatus) {
+    return await prismaClient.invoice.update({
+      where: { id },
+      data: { status },
+      include: { LateFee: true },
     })
   },
 

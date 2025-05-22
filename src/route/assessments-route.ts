@@ -3,13 +3,13 @@ import type { FastifyTypeInstance } from '../types/type'
 import z, { ZodError } from 'zod'
 import dayjs from 'dayjs'
 import {
-  createAssessment,
-  deleteAssessment,
-  getAssessmentById,
   getAssessmentBySubjectId,
+  createAssessment,
   listAllAssessments,
+  getAssessmentById,
   updateAssessment,
-} from '../models/assessment'
+  deleteAssessment,
+} from '../models/evaluation/assessment'
 
 export const Assessments: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,

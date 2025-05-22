@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { FastifyTypeInstance } from '../types/type'
-import { PaymentReminderModel } from '../models/payment_reminder'
+import type { FastifyTypeInstance } from '../../types/type'
+import { PaymentReminderModel } from '../../models/payment/payment_reminder'
 
 export const PaymentReminderRoutes: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance

@@ -3,15 +3,12 @@ import type { FastifyTypeInstance } from '../types/type'
 import z from 'zod'
 import {
   createAssessmentResult,
-  deleteAssessmentResult,
-  getAssessmentsResultByAssessmentId,
   listAllAssessmentsResult,
   listResultsByStudent,
+  getAssessmentsResultByAssessmentId,
   updateAssessmentResult,
-} from '../models/assessmentResult'
-import { listAssessmentsByStudent } from '../models/assessment'
-import { getRegistrationByStudentId } from '../models/registration'
-import { getStudentSubjectsByStudentId } from '../models/student_subject'
+  deleteAssessmentResult,
+} from '../models/evaluation/assessmentResult'
 
 export const AssessmentsResult: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,

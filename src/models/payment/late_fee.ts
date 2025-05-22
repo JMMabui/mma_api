@@ -1,4 +1,5 @@
-import { prismaClient } from '../database/script'
+import type { InvoiceStatus } from '@prisma/client'
+import { prismaClient } from '../../database/script'
 
 interface CreateLateFeeRequest {
   invoiceId: string
@@ -26,6 +27,14 @@ export const LateFeeModel = {
     })
   },
 
+  async findAllLateFee() {
+    return await prismaClient.lateFee.findMany({
+      include: {
+        invoice: true,
+      },
+    })
+  },
+
   async findById(id: string) {
     return await prismaClient.lateFee.findUnique({
       where: { id },
@@ -38,9 +47,6 @@ export const LateFeeModel = {
   async findByInvoiceId(invoiceId: string) {
     return await prismaClient.lateFee.findMany({
       where: { invoiceId },
-      orderBy: {
-        appliedAt: 'desc',
-      },
     })
   },
 
@@ -58,6 +64,16 @@ export const LateFeeModel = {
       (total: number, fee: LateFee) => total + fee.amount,
       0
     )
+  },
+
+  async updatePaymentFee(lateFeeId: string, status: InvoiceStatus) {
+    return await prismaClient.lateFee.update({
+      where: { id: lateFeeId },
+      data: {
+        status,
+        payedAt: new Date(),
+      },
+    })
   },
 
   async getLateFeeHistory(invoiceId: string) {

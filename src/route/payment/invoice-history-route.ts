@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { FastifyTypeInstance } from '../types/type'
-import { InvoiceHistoryModel } from '../models/invoice_history'
+import type { FastifyTypeInstance } from '../../types/type'
+import { InvoiceHistoryModel } from '../../models/payment/invoice_history'
 
 export const InvoiceHistoryRoutes: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance
