@@ -31,7 +31,9 @@ import { EmployeeEducationRoute } from './route/employees/employeeEducationRoute
 import { EmployeeBankRoute } from './route/employees/employeeBank-route'
 import { PaymentRoutes } from './route/payment/payment-route'
 
-const app = fastify().withTypeProvider<ZodTypeProvider>()
+const app = fastify({
+  logger: true,
+}).withTypeProvider<ZodTypeProvider>()
 
 app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
@@ -42,15 +44,77 @@ app.register(cors, corsOptions)
 app.register(fastifySwagger, {
   openapi: {
     info: {
-      title: 'api',
+      title: 'MMA API',
+      description: 'API do sistema de gestÃ£o acadÃªmica',
       version: '1.0.0',
+      contact: {
+        name: 'Suporte MMA',
+        email: 'suporte@mma.ac.mz',
+      },
     },
+    servers: [
+      {
+        url: 'http://localhost:3333',
+        description: 'Servidor de desenvolvimento',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Insira o token JWT no formato: Bearer <token>',
+        },
+      },
+    },
+    tags: [
+      { name: 'login', description: 'OperaÃ§Ãµes de autenticaÃ§Ã£o' },
+      {
+        name: 'students',
+        description: 'OperaÃ§Ãµes relacionadas a estudantes',
+      },
+      { name: 'course', description: 'OperaÃ§Ãµes relacionados a cursos' },
+
+      {
+        name: 'teachers',
+        description: 'OperaÃ§Ãµes relacionadas a professores',
+      },
+      {
+        name: 'subjects',
+        description: 'OperaÃ§Ãµes relacionadas a disciplinas',
+      },
+      {
+        name: 'assessments',
+        description: 'OperaÃ§Ãµes relacionadas a avaliaÃ§Ãµes',
+      },
+      {
+        name: 'payments',
+        description: 'OperaÃ§Ãµes relacionadas a pagamentos',
+      },
+      {
+        name: 'employees',
+        description: 'OperaÃ§Ãµes relacionadas a funcionÃ¡rios',
+      },
+    ],
   },
   transform: jsonSchemaTransform,
 })
 
 app.register(fastifySwaggerUi, {
   routePrefix: '/docs',
+  uiConfig: {
+    docExpansion: 'list',
+    deepLinking: true,
+  },
+  staticCSP: {
+    'default-src': ["'self'"],
+    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    'style-src': ["'self'", "'unsafe-inline'"],
+    'img-src': ["'self'", 'data:', 'validator.swagger.io'],
+    'connect-src': ["'self'"],
+  },
+  transformStaticCSP: header => header,
 })
 
 app.register(Login)
@@ -80,7 +144,6 @@ app.register(UserRoutes)
 app.register(EmployeeRoute)
 app.register(EmployeeEducationRoute)
 app.register(EmployeeBankRoute)
-
 app
   .listen({
     port: process.env.PORT ? Number(process.env.PORT) : 3333,
@@ -88,8 +151,12 @@ app
   })
   .then(() => {
     console.log('http server running')
+    app.log.info(
+      `Servidor rodando na porta ${process.env.PORT ? Number(process.env.PORT) : 3333}`
+    )
   })
   .catch(err => {
     console.error(err)
+    app.log.error('Erro ao iniciar o servidor', err)
     process.exit(1)
   })

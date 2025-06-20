@@ -5,12 +5,12 @@ import dayjs from 'dayjs'
 import type { FastifyTypeInstance } from '../types/type'
 import { prismaClient } from '../database/script'
 import { createLogin } from '../models/login'
-import { SuiteContext } from 'node:test'
 import {
   createStudents,
   deleteStudent,
   listAllStudents,
 } from '../models/students/students'
+import { studentWithLoginSchema } from '../schemas/schemas/Student/student.schema'
 
 export const Students: FastifyPluginAsyncZod = async (
   app: FastifyTypeInstance,
@@ -22,68 +22,7 @@ export const Students: FastifyPluginAsyncZod = async (
       schema: {
         tags: ['students'],
         description: 'Create students',
-        body: z.object({
-          surname: z.string(),
-          name: z.string(),
-          dataOfBirth: z
-            .string()
-            .refine(
-              date => {
-                return dayjs(date, 'YYYY-MM-DD', true).isValid()
-              },
-              { message: 'Invalid date format for date of birth' }
-            )
-            .transform(date => {
-              return dayjs(date, 'YYYY-MM-DD').toDate()
-            }),
-          placeOfBirth: z.string(),
-          gender: z.enum(['MASCULINO', 'FEMININO']),
-          maritalStatus: z.enum(['SOLTEIRO', 'CASADO', 'DIVORCIADO', 'VIUVO']),
-          provincyAddress: z.enum([
-            'MAPUTO_CIDADE',
-            'MAPUTO_PROVINCIA',
-            'GAZA',
-            'INHAMBANE',
-            'MANICA',
-            'SOFALA',
-            'TETE',
-            'ZAMBEZIA',
-            'NAMPULA',
-            'CABO_DELGADO',
-            'NIASSA',
-          ]),
-          address: z.string(),
-          fatherName: z.string(),
-          motherName: z.string(),
-          documentType: z.enum(['BI', 'PASSAPORTE']),
-          documentNumber: z.string(),
-          documentIssuedAt: z
-            .string()
-            .refine(
-              date => {
-                return dayjs(date, 'YYYY-MM-DD', true).isValid()
-              },
-              { message: 'Invalid date format for document issued date' }
-            )
-            .transform(date => {
-              return dayjs(date, 'YYYY-MM-DD').toDate()
-            }),
-          documentExpiredAt: z
-            .string()
-            .refine(
-              date => {
-                return dayjs(date, 'YYYY-MM-DD', true).isValid()
-              },
-              { message: 'Invalid date format for document expiration date' }
-            )
-            .transform(date => {
-              return dayjs(date, 'YYYY-MM-DD').toDate()
-            }),
-          nuit: z.number().refine(nuit => nuit.toString().length === 9, {
-            message: 'O NUIT deve ter exatamente 9 dígitos',
-          }),
-          loginId: z.string() || z.null(),
-        }),
+        body: studentWithLoginSchema,
       },
     },
     async (request, reply) => {

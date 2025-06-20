@@ -26,7 +26,7 @@ export const Student_Subject: FastifyPluginAsyncZod = async (
       },
     },
     async (request, reply) => {
-      console.log('api iniciado post /students_subjects')
+      console.log('api iniciado post /students_subjects', request.body)
       try {
         const { studentId, subjectsIds } = request.body
 

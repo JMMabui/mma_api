@@ -38,7 +38,7 @@ export const Login: FastifyPluginAsyncZod = async (
   app.post(
     '/signup',
     {
-      preHandler: [authenticate],
+      // preHandler: [authenticate],
       schema: {
         tags: ['login'],
         summary: 'create credential to login',
@@ -205,7 +205,7 @@ export const Login: FastifyPluginAsyncZod = async (
   app.get(
     '/login',
     {
-      preHandler: [authenticate],
+      // preHandler: [authenticate],
       schema: {
         tags: ['login'],
         description: 'list all login',

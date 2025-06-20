@@ -53,7 +53,7 @@ export const Registrations: FastifyPluginAsyncZod = async (
         })
 
         // 3. Atualizar o número de vagas disponíveis no curso
-        // await updateCourseVacancies(course_id)
+        // await updateCourseVacancies(courseId)
 
         reply.code(201).send({
           message: 'Inscrição criada com sucesso',
