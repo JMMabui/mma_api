@@ -8,28 +8,37 @@ import {
 } from 'fastify-type-provider-zod'
 import { fastifySwagger } from '@fastify/swagger'
 import { fastifySwaggerUi } from '@fastify/swagger-ui'
-import { StudentsLogin } from './route/login-students-route'
-import { Student_Subject } from './route/student-subject-route'
-import { TeacherSubject } from './route/teacher-subject-route'
-import { Login } from './route/login-route'
-import { PreInstitutos } from './route/preinstitute-route'
-import { Courses } from './route/course-route'
-import { Registrations } from './route/registration-route'
-import { Subjects } from './route/subjects-route'
-import { teachersData } from './route/teacher-route'
-import { Students } from './route/student-route'
-import { Assessments } from './route/assessments-route'
-import { AssessmentsResult } from './route/assessmentsResult-route'
+// Estudantes
+import { StudentsLogin } from './route/student/login-students-route'
+import { Student_Subject } from './route/student/student-subject-route'
+import { Students } from './route/student/student-route'
+import { Registrations } from './route/student/registration-route'
+// Professores
+import { TeacherSubject } from './route/teacher/teacher-subject-route'
+import { teachersData } from './route/teacher/teacher-route'
+// Cursos e Disciplinas
+import { Courses } from './route/course/course-route'
+import { Subjects } from './route/course/subjects-route'
+// Avaliações
+import { Assessments } from './route/assessment/assessments-route'
+import { AssessmentsResult } from './route/assessment/assessmentsResult-route'
+// Autenticação e Usuário
+import { Login } from './route/auth/login-route'
+import { UserRoutes } from './route/auth/user/user-route'
+// Institucional
+import { PreInstitutos } from './route/institution/preinstitute-route'
+// Funcionários
+import { EmployeeRoute } from './route/employee/employees/employee-route'
+import { EmployeeEducationRoute } from './route/employee/employees/employeeEducationRoute'
+import { EmployeeBankRoute } from './route/employee/employees/employeeBank-route'
+// Pagamentos
 import { InvoiceRoutes } from './route/payment/invoice-route'
+import { PaymentRoutes } from './route/payment/payment-route'
 import { PaymentReminderRoutes } from './route/payment/payment-reminder-route'
 import { LateFeeRoutes } from './route/payment/late-fee-route'
 import { InvoiceHistoryRoutes } from './route/payment/invoice-history-route'
+// Cors
 import { corsOptions } from './config/cors'
-import { UserRoutes } from './route/user/user-route'
-import { EmployeeRoute } from './route/employees/employee-route'
-import { EmployeeEducationRoute } from './route/employees/employeeEducationRoute'
-import { EmployeeBankRoute } from './route/employees/employeeBank-route'
-import { PaymentRoutes } from './route/payment/payment-route'
 
 const app = fastify({
   logger: true,
@@ -69,32 +78,32 @@ app.register(fastifySwagger, {
       },
     },
     tags: [
-      { name: 'login', description: 'OperaÃ§Ãµes de autenticaÃ§Ã£o' },
+      { name: 'login', description: 'Operações de autenticação' },
       {
         name: 'students',
-        description: 'OperaÃ§Ãµes relacionadas a estudantes',
+        description: 'Operações relacionadas a estudantes',
       },
-      { name: 'course', description: 'OperaÃ§Ãµes relacionados a cursos' },
+      { name: 'course', description: 'Operações relacionados a cursos' },
 
       {
         name: 'teachers',
-        description: 'OperaÃ§Ãµes relacionadas a professores',
+        description: 'Operações relacionadas a professores',
       },
       {
         name: 'subjects',
-        description: 'OperaÃ§Ãµes relacionadas a disciplinas',
+        description: 'Operações relacionadas a disciplinas',
       },
       {
         name: 'assessments',
-        description: 'OperaÃ§Ãµes relacionadas a avaliaÃ§Ãµes',
+        description: 'Operações relacionadas a avaliações',
       },
       {
         name: 'payments',
-        description: 'OperaÃ§Ãµes relacionadas a pagamentos',
+        description: 'Operações relacionadas a pagamentos',
       },
       {
         name: 'employees',
-        description: 'OperaÃ§Ãµes relacionadas a funcionÃ¡rios',
+        description: 'Operações relacionadas a funcionÃ¡rios',
       },
     ],
   },

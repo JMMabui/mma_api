@@ -1,12 +1,17 @@
-import { z, ZodError } from 'zod'
+import { late, z, ZodError } from 'zod'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { FastifyTypeInstance } from '../../types/type'
 import type { Month } from '@prisma/client'
 import { getRegistrationByCourseId } from '../../models/students/registration'
 import { InvoiceModel } from '../../models/payment/invoice'
 import { LateFeeModel } from '../../models/payment/late_fee'
-import { authenticate } from '../../middleware/auth'
-import { PaymentReminderModel } from '../../models/payment/payment_reminder'
+
+import type { FastifyRequest, FastifyReply } from 'fastify'
+import {
+  type CreateInvoiceType,
+  type UpdateInvoiceType,
+  createInvoiceSchema,
+} from '../../schemas/Payment/invoice.schema'
 
 // Função para calcular o valor da fatura com base no tipo, nível do curso e período
 function calculateInvoiceAmount(
@@ -30,9 +35,7 @@ function calculateInvoiceAmount(
   return curso[period] ?? 0
 }
 
-export const InvoiceRoutes: FastifyPluginAsyncZod = async (
-  app: FastifyTypeInstance
-) => {
+export const InvoiceRoutes: FastifyPluginAsyncZod = async app => {
   // Create a new invoice
   app.post(
     '/invoice',
@@ -42,38 +45,14 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
         tags: ['invoice'],
         summary: 'Criar nova fatura',
         description: 'Gera faturas para um estudante em um curso específico',
-        body: z.object({
-          studentId: z.string(),
-          courseId: z.string(),
-          type: z.enum([
-            'MENSALIDADE',
-            'MATRICULA',
-            'PROPINA',
-            'MATERIAL',
-            'OUTROS',
-          ]),
-          dueDate: z.string().datetime(),
-          months: z.array(
-            z.enum([
-              'JANEIRO',
-              'FEVEREIRO',
-              'MARCO',
-              'ABRIL',
-              'MAIO',
-              'JUNHO',
-              'JULHO',
-              'AGOSTO',
-              'SETEMBRO',
-              'OUTUBRO',
-              'NOVEMBRO',
-              'DEZEMBRO',
-            ])
-          ),
-          year: z.number().min(2000).max(2100).optional(),
-        }),
+
+        body: createInvoiceSchema,
       },
     },
-    async (request, reply) => {
+    async (
+      request: FastifyRequest<{ Body: CreateInvoiceType }>,
+      reply: FastifyReply
+    ) => {
       try {
         const { studentId, courseId, type, dueDate, months, year } =
           request.body
@@ -251,7 +230,7 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
         }),
       },
     },
-    async (request, reply) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
       try {
         const { id } = request.params
         const invoice = await InvoiceModel.findById(id)
@@ -299,7 +278,10 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
         }),
       },
     },
-    async (request, reply) => {
+    async (
+      request: FastifyRequest<{ Params: { studentId: string } }>,
+      reply
+    ) => {
       try {
         const { studentId } = request.params
         const invoices = await InvoiceModel.findByStudentId(studentId)
@@ -349,7 +331,13 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
         }),
       },
     },
-    async (request, reply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { id: string }
+        Body: UpdateInvoiceType
+      }>,
+      reply
+    ) => {
       try {
         const { id } = request.params
         const updateData = {
@@ -360,6 +348,14 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
           cancelledAt: request.body.cancelledAt
             ? new Date(request.body.cancelledAt)
             : undefined,
+          cancelledBy:
+            request.body.cancelledBy === null
+              ? undefined
+              : request.body.cancelledBy,
+          cancellationReason:
+            request.body.cancellationReason === null
+              ? undefined
+              : request.body.cancellationReason,
         }
 
         const invoice = await InvoiceModel.update(id, updateData)
@@ -381,57 +377,58 @@ export const InvoiceRoutes: FastifyPluginAsyncZod = async (
   )
 
   // Add payment to invoice
-  app.post(
-    '/invoice/:id/payment',
-    {
-      schema: {
-        tags: ['invoice'],
-        summary: 'Add payment to invoice',
-        description: 'Add a payment record to an invoice',
-        params: z.object({
-          id: z.string().uuid(),
-        }),
-        body: z.object({
-          amount: z.number().positive(),
-          paymentMethod: z.enum([
-            'DINHEIRO',
-            'TRANSFERENCIA',
-            'DEPOSITO',
-            'CARTAO_CREDITO',
-            'CARTAO_DEBITO',
-            'OUTROS',
-          ]),
-          reference: z.string().optional(),
-          description: z.string().optional(),
-        }),
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { id } = request.params
-        const payment = await InvoiceModel.addPayment(
-          id,
-          request.body.amount,
-          request.body.paymentMethod,
-          request.body.reference,
-          request.body.description
-        )
+  // app.post(
+  //   '/invoice/:id/payment',
+  //   {
+  //     schema: {
+  //       tags: ['invoice'],
+  //       summary: 'Add payment to invoice',
+  //       description: 'Add a payment record to an invoice',
+  //       params: z.object({
+  //         id: z.string().uuid(),
+  //       }),
+  //       body: z.object({
+  //         amount: z.number().positive(),
+  //         paymentMethod: z.enum([
+  //           'DINHEIRO',
+  //           'TRANSFERENCIA',
+  //           'DEPOSITO',
+  //           'CARTAO_CREDITO',
+  //           'CARTAO_DEBITO',
+  //           'OUTROS',
+  //         ]),
+  //         reference: z.string().optional(),
+  //         description: z.string().optional(),
+  //       }),
+  //     },
+  //   },
+  //   async (request: FastifyRequest<{Params:{id:string}, Body: }>, reply) => {
+  //     try {
+  //       const { id } = request.params
 
-        return reply.code(201).send({
-          success: true,
-          message: 'Payment added successfully',
-          data: payment,
-        })
-      } catch (error) {
-        console.error('Error adding payment:', error)
-        return reply.code(500).send({
-          success: false,
-          message: 'Error adding payment',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
-      }
-    }
-  )
+  //       const payment = await InvoiceModel.addPayment(
+  //         id,
+  //         request.body.amount,
+  //         request.body.paymentMethod,
+  //         request.body.reference,
+  //         request.body.description
+  //       )
+
+  //       return reply.code(201).send({
+  //         success: true,
+  //         message: 'Payment added successfully',
+  //         data: payment,
+  //       })
+  //     } catch (error) {
+  //       console.error('Error adding payment:', error)
+  //       return reply.code(500).send({
+  //         success: false,
+  //         message: 'Error adding payment',
+  //         error: error instanceof Error ? error.message : 'Unknown error',
+  //       })
+  //     }
+  //   }
+  // )
 
   // Add late fee to invoice
   app.post(
